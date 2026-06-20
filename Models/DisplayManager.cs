@@ -153,7 +153,7 @@ namespace ScaleSwitcher.Models
 
         public static bool SetDpi(DisplayInfo info, DpiInfo dpi)
         {
-            return NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETLOGICALDPIOVERRIDE, dpi.RelativeIndex, (IntPtr)info.MonitorIndex, 1);
+            return NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETLOGICALDPIOVERRIDE, dpi.RelativeIndex, (IntPtr)info.MonitorIndex, 3);
         }
     }
 }
