@@ -20,9 +20,23 @@ namespace ScaleSwitcher
 
             _settings = SettingsManager.Load();
 
+            Icon? appIcon = null;
+            try
+            {
+                string? exePath = Environment.ProcessPath;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    appIcon = Icon.ExtractAssociatedIcon(exePath);
+                }
+            }
+            catch
+            {
+                // Fallback
+            }
+
             _notifyIcon = new Forms.NotifyIcon
             {
-                Icon = SystemIcons.Application, // Fallback icon
+                Icon = appIcon ?? SystemIcons.Application,
                 Visible = true,
                 Text = "ScaleSwitcher"
             };
