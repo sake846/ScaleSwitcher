@@ -41,11 +41,15 @@ namespace ScaleSwitcher
                 // Fallback
             }
 
+            var contextMenu = new Forms.ContextMenuStrip();
+            contextMenu.Opening += (s, ev) => UpdateContextMenu();
+
             _notifyIcon = new Forms.NotifyIcon
             {
                 Icon = appIcon ?? SystemIcons.Application,
                 Visible = true,
-                Text = "ScaleSwitcher"
+                Text = "ScaleSwitcher",
+                ContextMenuStrip = contextMenu
             };
 
             _notifyIcon.MouseClick += NotifyIcon_MouseClick;
@@ -91,7 +95,10 @@ namespace ScaleSwitcher
 
         private void UpdateContextMenu()
         {
-            var menu = new Forms.ContextMenuStrip();
+            var menu = _notifyIcon.ContextMenuStrip;
+            if (menu == null) return;
+
+            menu.Items.Clear();
 
             var displays = DisplayManager.GetDisplays();
             
@@ -183,8 +190,6 @@ namespace ScaleSwitcher
             var exitItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Exit);
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
-
-            _notifyIcon.ContextMenuStrip = menu;
         }
 
         private void OpenSettings()
