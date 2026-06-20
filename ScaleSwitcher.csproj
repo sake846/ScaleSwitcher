@@ -12,9 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="app.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <Resource Include="app.ico" />
   </ItemGroup>
 
 </Project>
