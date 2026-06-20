@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ScaleSwitcher
+namespace ScaleSwitcher.Models
 {
     internal static class NativeMethods
     {

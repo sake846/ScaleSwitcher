@@ -3,14 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace ScaleSwitcher
+namespace ScaleSwitcher.Models
 {
-    public class AppSettings
-    {
-        public int TargetMonitorIndex { get; set; } = 0;
-        public List<int> ActiveDpiPercentages { get; set; } = new() { 100, 200 };
-    }
-
     public static class SettingsManager
     {
         private static readonly string ConfigPath = Path.Combine(

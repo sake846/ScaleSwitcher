@@ -8,11 +8,12 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="app.ico" />
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
 </Project>

@@ -2,14 +2,17 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows;
+using ScaleSwitcher.Models;
+using ScaleSwitcher.Services;
+using ScaleSwitcher.Views;
 using Forms = System.Windows.Forms;
 
 namespace ScaleSwitcher
 {
     public partial class App : System.Windows.Application
     {
-        private Forms.NotifyIcon _notifyIcon;
-        private AppSettings _settings;
+        private Forms.NotifyIcon _notifyIcon = null!;
+        private AppSettings _settings = null!;
         private int _currentScaleCycleIndex = 0;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -23,7 +26,7 @@ namespace ScaleSwitcher
             Icon? appIcon = null;
             try
             {
-                var iconUri = new Uri("pack://application:,,,/app.ico", UriKind.Absolute);
+                var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
                 var sri = System.Windows.Application.GetResourceStream(iconUri);
                 if (sri != null)
                 {
@@ -91,16 +94,13 @@ namespace ScaleSwitcher
             var menu = new Forms.ContextMenuStrip();
 
             var displays = DisplayManager.GetDisplays();
-            for (int i = 0; i < displays.Count; i++)
+            
+            if (displays.Count == 1)
             {
-                var display = displays[i];
-                string displayName = $"{ScaleSwitcher.Properties.Resources.DisplayPrefix} {i + 1}";
-                if (display.IsPrimary) displayName += " (Primary)";
+                var display = displays[0];
 
-                var displayMenu = new Forms.ToolStripMenuItem(displayName);
-
-                // Scale SubMenu
-                var scaleSubMenu = new Forms.ToolStripMenuItem(ScaleSwitcher.Properties.Resources.Menu_Scale);
+                // Scale SubMenu (Top Level)
+                var scaleSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Scale);
                 foreach (var dpi in display.AvailableDpis.OrderBy(d => d.Percentage))
                 {
                     var dpiItem = new Forms.ToolStripMenuItem($"{dpi.Percentage}%");
@@ -108,10 +108,10 @@ namespace ScaleSwitcher
                     dpiItem.Click += (s, ev) => DisplayManager.SetDpi(display, dpi);
                     scaleSubMenu.DropDownItems.Add(dpiItem);
                 }
-                displayMenu.DropDownItems.Add(scaleSubMenu);
+                menu.Items.Add(scaleSubMenu);
 
-                // Resolution SubMenu
-                var resSubMenu = new Forms.ToolStripMenuItem(ScaleSwitcher.Properties.Resources.Menu_Resolution);
+                // Resolution SubMenu (Top Level)
+                var resSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Resolution);
                 foreach (var res in display.AvailableResolutions)
                 {
                     var resItem = new Forms.ToolStripMenuItem($"{res.Width} x {res.Height}");
@@ -119,9 +119,42 @@ namespace ScaleSwitcher
                     resItem.Click += (s, ev) => DisplayManager.SetResolution(display, res);
                     resSubMenu.DropDownItems.Add(resItem);
                 }
-                displayMenu.DropDownItems.Add(resSubMenu);
+                menu.Items.Add(resSubMenu);
+            }
+            else
+            {
+                for (int i = 0; i < displays.Count; i++)
+                {
+                    var display = displays[i];
+                    string displayName = $"{AppLocalization.Instance.DisplayPrefix} {i + 1}";
+                    if (display.IsPrimary) displayName += " (Primary)";
 
-                menu.Items.Add(displayMenu);
+                    var displayMenu = new Forms.ToolStripMenuItem(displayName);
+
+                    // Scale SubMenu
+                    var scaleSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Scale);
+                    foreach (var dpi in display.AvailableDpis.OrderBy(d => d.Percentage))
+                    {
+                        var dpiItem = new Forms.ToolStripMenuItem($"{dpi.Percentage}%");
+                        dpiItem.Checked = (display.CurrentDpi?.Percentage == dpi.Percentage);
+                        dpiItem.Click += (s, ev) => DisplayManager.SetDpi(display, dpi);
+                        scaleSubMenu.DropDownItems.Add(dpiItem);
+                    }
+                    displayMenu.DropDownItems.Add(scaleSubMenu);
+
+                    // Resolution SubMenu
+                    var resSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Resolution);
+                    foreach (var res in display.AvailableResolutions)
+                    {
+                        var resItem = new Forms.ToolStripMenuItem($"{res.Width} x {res.Height}");
+                        resItem.Checked = (display.CurrentResolution != null && display.CurrentResolution.Equals(res));
+                        resItem.Click += (s, ev) => DisplayManager.SetResolution(display, res);
+                        resSubMenu.DropDownItems.Add(resItem);
+                    }
+                    displayMenu.DropDownItems.Add(resSubMenu);
+
+                    menu.Items.Add(displayMenu);
+                }
             }
 
             if (displays.Count > 0)
@@ -129,7 +162,7 @@ namespace ScaleSwitcher
                 menu.Items.Add(new Forms.ToolStripSeparator());
             }
 
-            var runAtStartupItem = new Forms.ToolStripMenuItem(ScaleSwitcher.Properties.Resources.Menu_RunAtStartup)
+            var runAtStartupItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_RunAtStartup)
             {
                 CheckOnClick = true,
                 Checked = StartupManager.IsRegistered()
@@ -143,11 +176,11 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(runAtStartupItem);
 
-            var settingsItem = new Forms.ToolStripMenuItem(ScaleSwitcher.Properties.Resources.Menu_Settings);
+            var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
 
-            var exitItem = new Forms.ToolStripMenuItem(ScaleSwitcher.Properties.Resources.Menu_Exit);
+            var exitItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Exit);
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
 

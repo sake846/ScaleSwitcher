@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Win32;
 
-namespace ScaleSwitcher
+namespace ScaleSwitcher.Models
 {
     public static class StartupManager
     {
