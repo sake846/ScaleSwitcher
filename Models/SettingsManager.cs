@@ -10,7 +10,7 @@ namespace ScaleSwitcher.Models
         private static readonly string ConfigPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ScaleSwitcher",
-            "config.json");
+            "settings.json");
 
         public static AppSettings Load()
         {

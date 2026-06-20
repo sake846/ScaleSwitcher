@@ -1,5 +1,7 @@
 # ScaleSwitcher
 
+[日本語はこちら](./README.ja.md)
+
 ScaleSwitcher is a lightweight Windows system tray utility built with WPF and .NET 10. It allows you to quickly change display scaling (DPI) and screen resolutions for multiple monitors.
 
 ## Features
@@ -46,7 +48,7 @@ The compiled binary will be located in: `bin/Release/net10.0-windows/ScaleSwitch
 
 User settings are saved in JSON format at:
 ```
-%APPDATA%\ScaleSwitcher\config.json
+%LOCALAPPDATA%\ScaleSwitcher\settings.json
 ```
 
 ## Technologies Used

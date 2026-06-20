@@ -45,7 +45,7 @@ dotnet build -c Release
 
 ユーザーの設定情報は JSON 形式で以下のパスに保存されます：
 ```
-%APPDATA%\ScaleSwitcher\config.json
+%LOCALAPPDATA%\ScaleSwitcher\settings.json
 ```
 
 ## 技術情報
