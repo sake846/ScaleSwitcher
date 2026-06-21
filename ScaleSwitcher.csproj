@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app.light.ico" />
+    <Resource Include="Assets\app.dark.ico" />
   </ItemGroup>
 
 </Project>

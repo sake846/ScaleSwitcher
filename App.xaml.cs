@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows;
+using Microsoft.Win32;
 using ScaleSwitcher.Models;
 using ScaleSwitcher.Services;
 using ScaleSwitcher.Views;
@@ -14,6 +15,8 @@ namespace ScaleSwitcher
         private Forms.NotifyIcon _notifyIcon = null!;
         private AppSettings _settings = null!;
         private int _currentScaleCycleIndex = 0;
+        private Icon? _lightTrayIcon;
+        private Icon? _darkTrayIcon;
         private static System.Threading.Mutex? _mutex;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -34,39 +37,78 @@ namespace ScaleSwitcher
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             _settings = SettingsManager.Load();
-
-            Icon? appIcon = null;
-            try
-            {
-                var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
-                var sri = System.Windows.Application.GetResourceStream(iconUri);
-                if (sri != null)
-                {
-                    using (var stream = sri.Stream)
-                    {
-                        appIcon = new Icon(stream);
-                    }
-                }
-            }
-            catch
-            {
-                // Fallback
-            }
+            _lightTrayIcon = LoadIcon("pack://application:,,,/Assets/app.light.ico");
+            _darkTrayIcon = LoadIcon("pack://application:,,,/Assets/app.dark.ico");
 
             var contextMenu = new Forms.ContextMenuStrip();
             contextMenu.Opening += (s, ev) => UpdateContextMenu();
 
             _notifyIcon = new Forms.NotifyIcon
             {
-                Icon = appIcon ?? SystemIcons.Application,
+                Icon = GetTrayIconForCurrentTheme() ?? SystemIcons.Application,
                 Visible = true,
                 Text = "ScaleSwitcher",
                 ContextMenuStrip = contextMenu
             };
 
             _notifyIcon.MouseClick += NotifyIcon_MouseClick;
+            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
 
             UpdateContextMenu();
+        }
+
+        private static Icon? LoadIcon(string iconUri)
+        {
+            try
+            {
+                var sri = System.Windows.Application.GetResourceStream(new Uri(iconUri, UriKind.Absolute));
+                if (sri == null) return null;
+
+                using var stream = sri.Stream;
+                return new Icon(stream);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private Icon? GetTrayIconForCurrentTheme()
+        {
+            return IsSystemLightTheme() ? _lightTrayIcon ?? _darkTrayIcon : _darkTrayIcon ?? _lightTrayIcon;
+        }
+
+        private static bool IsSystemLightTheme()
+        {
+            const string personalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+            const string valueName = "SystemUsesLightTheme";
+
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(personalizeKeyPath);
+                if (key?.GetValue(valueName) is int value)
+                {
+                    return value != 0;
+                }
+            }
+            catch
+            {
+                // Fall through to the default.
+            }
+
+            return true;
+        }
+
+        private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        {
+            if (e.Category is UserPreferenceCategory.General or UserPreferenceCategory.VisualStyle)
+            {
+                var icon = GetTrayIconForCurrentTheme();
+                if (icon != null)
+                {
+                    _notifyIcon.Icon = icon;
+                }
+            }
         }
 
         private void NotifyIcon_MouseClick(object? sender, Forms.MouseEventArgs e)
@@ -216,6 +258,7 @@ namespace ScaleSwitcher
 
         private void ExitApp()
         {
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
             Shutdown();
@@ -223,6 +266,10 @@ namespace ScaleSwitcher
 
         protected override void OnExit(ExitEventArgs e)
         {
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+            _lightTrayIcon?.Dispose();
+            _darkTrayIcon?.Dispose();
+
             if (_mutex != null)
             {
                 try
