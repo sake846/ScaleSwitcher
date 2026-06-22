@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace ScaleSwitcher.Models
 {
@@ -23,6 +24,7 @@ namespace ScaleSwitcher.Models
                     var info = new DisplayInfo
                     {
                         MonitorIndex = index,
+                        SettingsDisplayNumber = GetSettingsDisplayNumber(mi.szDevice, index),
                         MonitorHandle = hMonitor,
                         DeviceName = mi.szDevice,
                         IsPrimary = (mi.dwFlags & 1) != 0 // MONITORINFOF_PRIMARY
@@ -38,6 +40,21 @@ namespace ScaleSwitcher.Models
             }, IntPtr.Zero);
 
             return displays;
+        }
+
+        private static int GetSettingsDisplayNumber(string deviceName, int fallbackIndex)
+        {
+            // Windows Settings labels displays using the numeric suffix from the
+            // GDI device name (for example, "\\.\DISPLAY2" is shown as Display 2).
+            // EnumDisplayMonitors can return monitors in a different order, so do
+            // not derive the user-visible display number from the enumeration index.
+            var match = Regex.Match(deviceName, @"DISPLAY(?<number>\d+)$", RegexOptions.IgnoreCase);
+            if (match.Success && int.TryParse(match.Groups["number"].Value, out int displayNumber))
+            {
+                return displayNumber;
+            }
+
+            return fallbackIndex + 1;
         }
 
         private static void PopulateResolutions(DisplayInfo info)
