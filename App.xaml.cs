@@ -149,6 +149,8 @@ namespace ScaleSwitcher
 
         private void UpdateContextMenu()
         {
+            _settings = SettingsManager.Load();
+
             var menu = _notifyIcon.ContextMenuStrip;
             if (menu == null) return;
 
@@ -187,8 +189,7 @@ namespace ScaleSwitcher
                 for (int i = 0; i < displays.Count; i++)
                 {
                     var display = displays[i];
-                    string displayName = $"{AppLocalization.Instance.DisplayPrefix} {display.SettingsDisplayNumber}";
-                    if (display.IsPrimary) displayName += " (Primary)";
+                    string displayName = GetMenuDisplayName(display, i);
 
                     var displayMenu = new Forms.ToolStripMenuItem(displayName);
 
@@ -237,10 +238,6 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(runAtStartupItem);
 
-            var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
-            settingsItem.Click += (s, e) => OpenSettings();
-            menu.Items.Add(settingsItem);
-
             var showDisplayInfoItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_ShowDisplayInfo)
             {
                 CheckOnClick = true,
@@ -255,9 +252,29 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(showDisplayInfoItem);
 
+            var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
+            settingsItem.Click += (s, e) => OpenSettings();
+            menu.Items.Add(settingsItem);
+
+            menu.Items.Add(new Forms.ToolStripSeparator());
+
             var exitItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Exit);
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
+        }
+
+        private string GetMenuDisplayName(DisplayInfo display, int displayIndex)
+        {
+            if (_settings.UseCustomDisplayName &&
+                displayIndex == _settings.TargetMonitorIndex &&
+                !string.IsNullOrWhiteSpace(_settings.CustomDisplayName))
+            {
+                return _settings.CustomDisplayName.Trim();
+            }
+
+            string displayName = $"{AppLocalization.Instance.DisplayPrefix} {display.SettingsDisplayNumber}";
+            if (display.IsPrimary) displayName += " (Primary)";
+            return displayName;
         }
 
         private void OpenSettings()

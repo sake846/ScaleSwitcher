@@ -447,9 +447,7 @@ namespace ScaleSwitcher.Models
             string dpi = display.CurrentDpi != null ? $"{display.CurrentDpi.Percentage}%" : "unknown";
 
             return string.Join(Environment.NewLine,
-                $"Windows settings display: {display.SettingsDisplayNumber}",
-                $"Monitor index: {display.MonitorIndex}",
-                $"Device: {display.DeviceName}",
+                $"Display: {display.SettingsDisplayNumber}",
                 $"Primary: {display.IsPrimary}",
                 $"Resolution: {resolution}",
                 $"Scale: {dpi}");

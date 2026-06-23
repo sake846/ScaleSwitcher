@@ -60,36 +60,25 @@ namespace ScaleSwitcher.ViewModels
         }
     }
 
-    public class DisplayNumberSourceOptionViewModel
-    {
-        public string Value { get; }
-        public string DisplayText { get; }
-
-        public DisplayNumberSourceOptionViewModel(string value, string displayText)
-        {
-            Value = value;
-            DisplayText = displayText;
-        }
-    }
-
     public class SettingsViewModel : ViewModelBase
     {
         private readonly AppSettings _settings;
         private readonly List<DisplayInfo> _rawDisplays;
         private DisplayItemViewModel? _selectedDisplay;
-        private DisplayNumberSourceOptionViewModel? _selectedDisplayNumberSource;
+        private bool _useCustomDisplayName;
+        private string _customDisplayName = string.Empty;
         private ObservableCollection<ScaleOptionViewModel> _scaleOptions = new();
 
         public event Action<bool>? RequestClose;
 
         public string Title => AppLocalization.Instance.Settings_Title;
         public string TargetDisplayHeader => AppLocalization.Instance.Settings_TargetDisplay;
+        public string UseCustomDisplayNameText => AppLocalization.Instance.Settings_UseCustomDisplayName;
+        public string CustomDisplayNameHeader => AppLocalization.Instance.Settings_CustomDisplayName;
         public string ScalesHeader => AppLocalization.Instance.Settings_Scales;
-        public string DisplayNumberSourceHeader => AppLocalization.Instance.Settings_DisplayNumberSource;
         public string SaveButtonText => AppLocalization.Instance.Settings_Save;
 
         public List<DisplayItemViewModel> Displays { get; }
-        public List<DisplayNumberSourceOptionViewModel> DisplayNumberSources { get; }
         public ICommand SaveCommand { get; }
 
         public DisplayItemViewModel? SelectedDisplay
@@ -100,6 +89,7 @@ namespace ScaleSwitcher.ViewModels
                 if (SetProperty(ref _selectedDisplay, value))
                 {
                     PopulateScales(value?.Display);
+                    OnPropertyChanged(nameof(DisplayNameText));
                 }
             }
         }
@@ -110,10 +100,40 @@ namespace ScaleSwitcher.ViewModels
             set => SetProperty(ref _scaleOptions, value);
         }
 
-        public DisplayNumberSourceOptionViewModel? SelectedDisplayNumberSource
+        public bool UseCustomDisplayName
         {
-            get => _selectedDisplayNumberSource;
-            set => SetProperty(ref _selectedDisplayNumberSource, value);
+            get => _useCustomDisplayName;
+            set
+            {
+                if (SetProperty(ref _useCustomDisplayName, value))
+                {
+                    if (value && string.IsNullOrWhiteSpace(CustomDisplayName))
+                    {
+                        CustomDisplayName = SelectedDisplay?.DisplayName ?? string.Empty;
+                    }
+                    OnPropertyChanged(nameof(DisplayNameText));
+                }
+            }
+        }
+
+        public string CustomDisplayName
+        {
+            get => _customDisplayName;
+            set
+            {
+                if (SetProperty(ref _customDisplayName, value))
+                {
+                    OnPropertyChanged(nameof(DisplayNameText));
+                }
+            }
+        }
+
+        public string DisplayNameText
+        {
+            get => UseCustomDisplayName
+                ? CustomDisplayName
+                : SelectedDisplay?.DisplayName ?? string.Empty;
+            set => CustomDisplayName = value;
         }
 
         public SettingsViewModel()
@@ -122,7 +142,6 @@ namespace ScaleSwitcher.ViewModels
             _rawDisplays = DisplayManager.GetDisplays();
 
             Displays = _rawDisplays.Select((d, i) => new DisplayItemViewModel(d, i)).ToList();
-            DisplayNumberSources = CreateDisplayNumberSourceOptions();
             SaveCommand = new RelayCommand(Save);
 
             // Select default target display
@@ -136,20 +155,8 @@ namespace ScaleSwitcher.ViewModels
                 SelectedDisplay = Displays[selectedIndex];
             }
 
-            SelectedDisplayNumberSource = DisplayNumberSources.FirstOrDefault(o => o.Value == _settings.DisplayNumberSource)
-                                          ?? DisplayNumberSources.First(o => o.Value == ScaleSwitcher.Models.DisplayNumberSources.TargetId);
-        }
-
-        private static List<DisplayNumberSourceOptionViewModel> CreateDisplayNumberSourceOptions()
-        {
-            var localization = AppLocalization.Instance;
-            return new List<DisplayNumberSourceOptionViewModel>
-            {
-                new(ScaleSwitcher.Models.DisplayNumberSources.PathOrder, localization.DisplayNumberSource_PathOrder),
-                new(ScaleSwitcher.Models.DisplayNumberSources.SourceId, localization.DisplayNumberSource_SourceId),
-                new(ScaleSwitcher.Models.DisplayNumberSources.TargetId, localization.DisplayNumberSource_TargetId),
-                new(ScaleSwitcher.Models.DisplayNumberSources.GdiDeviceName, localization.DisplayNumberSource_GdiDeviceName)
-            };
+            UseCustomDisplayName = _settings.UseCustomDisplayName;
+            CustomDisplayName = _settings.CustomDisplayName ?? string.Empty;
         }
 
         private void PopulateScales(DisplayInfo? display)
@@ -184,10 +191,8 @@ namespace ScaleSwitcher.ViewModels
                 .Where(o => o.IsSelected)
                 .Select(o => o.Percentage)
                 .ToList();
-            if (SelectedDisplayNumberSource != null)
-            {
-                _settings.DisplayNumberSource = SelectedDisplayNumberSource.Value;
-            }
+            _settings.UseCustomDisplayName = UseCustomDisplayName;
+            _settings.CustomDisplayName = (CustomDisplayName ?? string.Empty).Trim();
 
             SettingsManager.Save(_settings);
             RequestClose?.Invoke(true);

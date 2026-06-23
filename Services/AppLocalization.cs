@@ -80,34 +80,16 @@ namespace ScaleSwitcher.Services
             _ => "ローテーションに含めるスケーリング:"
         };
 
-        public string Settings_DisplayNumberSource => _language switch
+        public string Settings_UseCustomDisplayName => _language switch
         {
-            UiLanguage.English => "Display Number Source:",
-            _ => "ディスプレイ番号の取得元:"
+            UiLanguage.English => "Rename display",
+            _ => "表示名を変更"
         };
 
-        public string DisplayNumberSource_PathOrder => _language switch
+        public string Settings_CustomDisplayName => _language switch
         {
-            UiLanguage.English => "pathOrderDisplayNumber",
-            _ => "pathOrderDisplayNumber"
-        };
-
-        public string DisplayNumberSource_SourceId => _language switch
-        {
-            UiLanguage.English => "sourceIdDisplayNumber",
-            _ => "sourceIdDisplayNumber"
-        };
-
-        public string DisplayNumberSource_TargetId => _language switch
-        {
-            UiLanguage.English => "targetIdDisplayNumber",
-            _ => "targetIdDisplayNumber"
-        };
-
-        public string DisplayNumberSource_GdiDeviceName => _language switch
-        {
-            UiLanguage.English => "gdiDeviceDisplayNumber",
-            _ => "gdiDeviceDisplayNumber"
+            UiLanguage.English => "Display name:",
+            _ => "表示する表示名:"
         };
 
         public string Settings_Save => _language switch
