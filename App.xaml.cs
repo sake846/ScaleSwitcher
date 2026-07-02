@@ -17,6 +17,7 @@ namespace ScaleSwitcher
         private int _currentScaleCycleIndex = 0;
         private Icon? _lightTrayIcon;
         private Icon? _darkTrayIcon;
+        private ShiftChordListener? _shiftChordListener;
         private static System.Threading.Mutex? _mutex;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -54,7 +55,15 @@ namespace ScaleSwitcher
             _notifyIcon.MouseClick += NotifyIcon_MouseClick;
             SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
 
+            _shiftChordListener = new ShiftChordListener();
+            _shiftChordListener.ShiftChordPressed += ShiftChordListener_ShiftChordPressed;
+
             UpdateContextMenu();
+        }
+
+        private void ShiftChordListener_ShiftChordPressed(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(CycleDpi);
         }
 
         private static Icon? LoadIcon(string iconUri)
@@ -293,6 +302,11 @@ namespace ScaleSwitcher
         protected override void OnExit(ExitEventArgs e)
         {
             SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+            if (_shiftChordListener != null)
+            {
+                _shiftChordListener.ShiftChordPressed -= ShiftChordListener_ShiftChordPressed;
+                _shiftChordListener.Dispose();
+            }
             _lightTrayIcon?.Dispose();
             _darkTrayIcon?.Dispose();
 
