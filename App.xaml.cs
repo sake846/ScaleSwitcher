@@ -63,7 +63,7 @@ namespace ScaleSwitcher
 
         private void ShiftChordListener_ShiftChordPressed(object? sender, EventArgs e)
         {
-            Dispatcher.BeginInvoke(CycleDpi);
+            Dispatcher.BeginInvoke(() => CycleDpi(restoreCursorPosition: false));
         }
 
         private static Icon? LoadIcon(string iconUri)
@@ -124,11 +124,11 @@ namespace ScaleSwitcher
         {
             if (e.Button == Forms.MouseButtons.Left)
             {
-                CycleDpi();
+                CycleDpi(restoreCursorPosition: true);
             }
         }
 
-        private void CycleDpi()
+        private void CycleDpi(bool restoreCursorPosition)
         {
             _settings = SettingsManager.Load(); // reload in case it changed
             if (_settings.ActiveDpiPercentages.Count == 0) return;
@@ -152,7 +152,7 @@ namespace ScaleSwitcher
             var nextDpi = targetDisplay.AvailableDpis.FirstOrDefault(d => d.Percentage == nextPercentage);
             if (nextDpi != null)
             {
-                DisplayManager.SetDpi(targetDisplay, nextDpi);
+                DisplayManager.SetDpi(targetDisplay, nextDpi, restoreCursorPosition);
             }
         }
 

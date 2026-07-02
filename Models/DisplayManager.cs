@@ -386,7 +386,7 @@ namespace ScaleSwitcher.Models
             return false;
         }
 
-        public static bool SetDpi(DisplayInfo info, DpiInfo dpi)
+        public static bool SetDpi(DisplayInfo info, DpiInfo dpi, bool restoreCursorPosition = true)
         {
             var oldPos = System.Windows.Forms.Cursor.Position;
             var oldScreenObj = System.Windows.Forms.Screen.FromPoint(oldPos);
@@ -408,7 +408,14 @@ namespace ScaleSwitcher.Models
                                 : 1.0;
                 int newOffsetX = (int)Math.Round(offsetX * ratio);
                 int newOffsetY = (int)Math.Round(offsetY * ratio);
-                RestoreCursorPosition(newOffsetX, newOffsetY, deviceName, osd);
+                if (restoreCursorPosition)
+                {
+                    RestoreCursorPosition(newOffsetX, newOffsetY, deviceName, osd);
+                }
+                else
+                {
+                    CloseOsdAfterDisplayChange(osd);
+                }
             }
             else
             {
@@ -562,6 +569,16 @@ namespace ScaleSwitcher.Models
                 {
                     osd.CloseWithFade();
                 });
+            }
+        }
+
+        private static async void CloseOsdAfterDisplayChange(ScaleSwitcher.Views.OsdWindow? osd)
+        {
+            await System.Threading.Tasks.Task.Delay(CursorRestoreDelayMs);
+
+            if (osd != null && System.Windows.Application.Current != null)
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() => osd.CloseWithFade());
             }
         }
     }
