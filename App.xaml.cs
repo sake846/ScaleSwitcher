@@ -148,6 +148,20 @@ namespace ScaleSwitcher
                 _currentScaleCycleIndex = _settings.ActiveDpiPercentages.IndexOf(targetDisplay.CurrentDpi.Percentage);
             }
 
+            // Use the last successfully applied position as the old DPI as well.
+            // The value reported by Windows may still describe the previous cycle.
+            if (_hasScaleCyclePosition &&
+                _currentScaleCycleIndex >= 0 &&
+                _currentScaleCycleIndex < _settings.ActiveDpiPercentages.Count)
+            {
+                int currentPercentage = _settings.ActiveDpiPercentages[_currentScaleCycleIndex];
+                var currentDpi = targetDisplay.AvailableDpis.FirstOrDefault(d => d.Percentage == currentPercentage);
+                if (currentDpi != null)
+                {
+                    targetDisplay.CurrentDpi = currentDpi;
+                }
+            }
+
             // Next index
             _currentScaleCycleIndex = (_currentScaleCycleIndex + 1) % _settings.ActiveDpiPercentages.Count;
             int nextPercentage = _settings.ActiveDpiPercentages[_currentScaleCycleIndex];
