@@ -16,8 +16,6 @@ namespace ScaleSwitcher.Services
 
         private readonly LowLevelKeyboardProc _hookCallback;
         private IntPtr _hook;
-        private bool _leftShiftDown;
-        private bool _rightShiftDown;
         private bool _chordTriggered;
 
         public ShiftChordListener()
@@ -38,6 +36,9 @@ namespace ScaleSwitcher.Services
 
         public event EventHandler? ShiftChordPressed;
 
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
         private IntPtr HookCallback(int code, IntPtr wParam, IntPtr lParam)
         {
             if (code >= 0)
@@ -47,26 +48,26 @@ namespace ScaleSwitcher.Services
                 bool isKeyDown = message is WmKeyDown or WmSysKeyDown;
                 bool isKeyUp = message is WmKeyUp or WmSysKeyUp;
 
-                if (virtualKey == VkLShift && (isKeyDown || isKeyUp))
+                if ((virtualKey == VkLShift || virtualKey == VkRShift) && (isKeyDown || isKeyUp))
                 {
-                    _leftShiftDown = isKeyDown;
-                }
-                else if (virtualKey == VkRShift && (isKeyDown || isKeyUp))
-                {
-                    _rightShiftDown = isKeyDown;
-                }
+                    bool leftShiftDown = (GetAsyncKeyState(VkLShift) & 0x8000) != 0;
+                    bool rightShiftDown = (GetAsyncKeyState(VkRShift) & 0x8000) != 0;
 
-                if (_leftShiftDown && _rightShiftDown)
-                {
-                    if (!_chordTriggered)
+                    if (virtualKey == VkLShift) leftShiftDown = isKeyDown;
+                    if (virtualKey == VkRShift) rightShiftDown = isKeyDown;
+
+                    if (leftShiftDown && rightShiftDown)
                     {
-                        _chordTriggered = true;
-                        ShiftChordPressed?.Invoke(this, EventArgs.Empty);
+                        if (!_chordTriggered)
+                        {
+                            _chordTriggered = true;
+                            ShiftChordPressed?.Invoke(this, EventArgs.Empty);
+                        }
                     }
-                }
-                else
-                {
-                    _chordTriggered = false;
+                    else
+                    {
+                        _chordTriggered = false;
+                    }
                 }
             }
 
