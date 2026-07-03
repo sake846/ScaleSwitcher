@@ -15,6 +15,7 @@ namespace ScaleSwitcher
         private Forms.NotifyIcon _notifyIcon = null!;
         private AppSettings _settings = null!;
         private int _currentScaleCycleIndex = 0;
+        private bool _hasScaleCyclePosition;
         private Icon? _lightTrayIcon;
         private Icon? _darkTrayIcon;
         private ShiftChordListener? _shiftChordListener;
@@ -138,8 +139,11 @@ namespace ScaleSwitcher
 
             var targetDisplay = displays[_settings.TargetMonitorIndex];
 
-            // Initialize cycle index based on current DPI if possible
-            if (targetDisplay.CurrentDpi != null && _settings.ActiveDpiPercentages.Contains(targetDisplay.CurrentDpi.Percentage))
+            // GetDpiForMonitor can briefly return the old value after a DPI change.
+            // Keep the last successful position for both mouse and keyboard input.
+            if (!_hasScaleCyclePosition &&
+                targetDisplay.CurrentDpi != null &&
+                _settings.ActiveDpiPercentages.Contains(targetDisplay.CurrentDpi.Percentage))
             {
                 _currentScaleCycleIndex = _settings.ActiveDpiPercentages.IndexOf(targetDisplay.CurrentDpi.Percentage);
             }
@@ -152,7 +156,11 @@ namespace ScaleSwitcher
             var nextDpi = targetDisplay.AvailableDpis.FirstOrDefault(d => d.Percentage == nextPercentage);
             if (nextDpi != null)
             {
-                DisplayManager.SetDpi(targetDisplay, nextDpi, restoreCursorPosition);
+                _hasScaleCyclePosition = DisplayManager.SetDpi(targetDisplay, nextDpi, restoreCursorPosition);
+            }
+            else
+            {
+                _hasScaleCyclePosition = false;
             }
         }
 
@@ -196,7 +204,7 @@ namespace ScaleSwitcher
             AddSystemMenuItems(menu);
         }
 
-        private static Forms.ToolStripMenuItem CreateScaleSubMenu(DisplayInfo display)
+        private Forms.ToolStripMenuItem CreateScaleSubMenu(DisplayInfo display)
         {
             var scaleSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Scale);
             foreach (var dpi in display.AvailableDpis.OrderBy(d => d.Percentage))
@@ -205,7 +213,21 @@ namespace ScaleSwitcher
                 {
                     Checked = display.CurrentDpi?.Percentage == dpi.Percentage
                 };
-                dpiItem.Click += (s, ev) => DisplayManager.SetDpi(display, dpi);
+                dpiItem.Click += (s, ev) =>
+                {
+                    if (!DisplayManager.SetDpi(display, dpi))
+                    {
+                        _hasScaleCyclePosition = false;
+                        return;
+                    }
+
+                    int selectedIndex = _settings.ActiveDpiPercentages.IndexOf(dpi.Percentage);
+                    _hasScaleCyclePosition = selectedIndex >= 0;
+                    if (_hasScaleCyclePosition)
+                    {
+                        _currentScaleCycleIndex = selectedIndex;
+                    }
+                };
                 scaleSubMenu.DropDownItems.Add(dpiItem);
             }
             return scaleSubMenu;
@@ -286,6 +308,7 @@ namespace ScaleSwitcher
             var settingsWindow = new SettingsWindow();
             if (settingsWindow.ShowDialog() == true)
             {
+                _hasScaleCyclePosition = false;
                 // Refresh context menu after settings changed
                 UpdateContextMenu();
             }
