@@ -278,6 +278,16 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(runAtStartupItem);
 
+            var keyboardSwitchItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_KeyboardSwitch)
+            {
+                Checked = _settings.KeyboardSwitchMode != KeyboardSwitchMode.Off
+            };
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardOff, KeyboardSwitchMode.Off);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardControl, KeyboardSwitchMode.Control);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardAlt, KeyboardSwitchMode.Alt);
+            menu.Items.Add(keyboardSwitchItem);
+
             var showDisplayInfoItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_ShowDisplayInfo)
             {
                 CheckOnClick = true,
@@ -291,13 +301,6 @@ namespace ScaleSwitcher
                     DisplayManager.HideDisplayInfoOsds();
             };
             menu.Items.Add(showDisplayInfoItem);
-
-            var keyboardSwitchItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_KeyboardSwitch);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardOff, KeyboardSwitchMode.Off);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardControl, KeyboardSwitchMode.Control);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardAlt, KeyboardSwitchMode.Alt);
-            menu.Items.Add(keyboardSwitchItem);
 
             var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
             settingsItem.Click += (s, e) => OpenSettings();
