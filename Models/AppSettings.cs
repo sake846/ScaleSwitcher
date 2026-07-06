@@ -2,6 +2,14 @@ using System.Collections.Generic;
 
 namespace ScaleSwitcher.Models
 {
+    public enum KeyboardSwitchMode
+    {
+        Off,
+        Shift,
+        Control,
+        Alt
+    }
+
     public static class DisplayNumberSources
     {
         public const string PathOrder = "PathOrder";
@@ -25,5 +33,6 @@ namespace ScaleSwitcher.Models
         public string DisplayNumberSource { get; set; } = DisplayNumberSources.TargetId;
         public bool UseCustomDisplayName { get; set; } = false;
         public string CustomDisplayName { get; set; } = string.Empty;
+        public KeyboardSwitchMode KeyboardSwitchMode { get; set; } = KeyboardSwitchMode.Shift;
     }
 }

@@ -80,6 +80,36 @@ namespace ScaleSwitcher.Services
             _ => "ローテーションに含めるスケーリング:"
         };
 
+        public string Menu_KeyboardSwitch => _language switch
+        {
+            UiLanguage.English => "Switch using keyboard",
+            _ => "キーボードで切り替え"
+        };
+
+        public string Menu_KeyboardOff => _language switch
+        {
+            UiLanguage.English => "Off",
+            _ => "オフ"
+        };
+
+        public string Menu_KeyboardShift => _language switch
+        {
+            UiLanguage.English => "Left + Right Shift",
+            _ => "左右Shift"
+        };
+
+        public string Menu_KeyboardControl => _language switch
+        {
+            UiLanguage.English => "Left + Right Ctrl",
+            _ => "左右Ctrl"
+        };
+
+        public string Menu_KeyboardAlt => _language switch
+        {
+            UiLanguage.English => "Left + Right Alt",
+            _ => "左右Alt"
+        };
+
         public string Settings_UseCustomDisplayName => _language switch
         {
             UiLanguage.English => "Rename display",

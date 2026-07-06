@@ -18,7 +18,7 @@ namespace ScaleSwitcher
         private bool _hasScaleCyclePosition;
         private Icon? _lightTrayIcon;
         private Icon? _darkTrayIcon;
-        private ShiftChordListener? _shiftChordListener;
+        private KeyboardChordListener? _keyboardChordListener;
         private static System.Threading.Mutex? _mutex;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -56,13 +56,13 @@ namespace ScaleSwitcher
             _notifyIcon.MouseClick += NotifyIcon_MouseClick;
             SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
 
-            _shiftChordListener = new ShiftChordListener();
-            _shiftChordListener.ShiftChordPressed += ShiftChordListener_ShiftChordPressed;
+            _keyboardChordListener = new KeyboardChordListener(_settings.KeyboardSwitchMode);
+            _keyboardChordListener.ChordPressed += KeyboardChordListener_ChordPressed;
 
             UpdateContextMenu();
         }
 
-        private void ShiftChordListener_ShiftChordPressed(object? sender, EventArgs e)
+        private void KeyboardChordListener_ChordPressed(object? sender, EventArgs e)
         {
             Dispatcher.BeginInvoke(() => CycleDpi(restoreCursorPosition: false));
         }
@@ -292,6 +292,13 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(showDisplayInfoItem);
 
+            var keyboardSwitchItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_KeyboardSwitch);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardOff, KeyboardSwitchMode.Off);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardControl, KeyboardSwitchMode.Control);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardAlt, KeyboardSwitchMode.Alt);
+            menu.Items.Add(keyboardSwitchItem);
+
             var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
@@ -301,6 +308,28 @@ namespace ScaleSwitcher
             var exitItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Exit);
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
+        }
+
+        private void AddKeyboardSwitchMenuItem(
+            Forms.ToolStripMenuItem parent,
+            string text,
+            KeyboardSwitchMode mode)
+        {
+            var item = new Forms.ToolStripMenuItem(text)
+            {
+                Checked = _settings.KeyboardSwitchMode == mode
+            };
+            item.Click += (s, e) =>
+            {
+                _settings.KeyboardSwitchMode = mode;
+                SettingsManager.Save(_settings);
+                if (_keyboardChordListener != null)
+                {
+                    _keyboardChordListener.Mode = mode;
+                }
+                UpdateContextMenu();
+            };
+            parent.DropDownItems.Add(item);
         }
 
         private string GetMenuDisplayName(DisplayInfo display, int displayIndex)
@@ -339,10 +368,10 @@ namespace ScaleSwitcher
         protected override void OnExit(ExitEventArgs e)
         {
             SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
-            if (_shiftChordListener != null)
+            if (_keyboardChordListener != null)
             {
-                _shiftChordListener.ShiftChordPressed -= ShiftChordListener_ShiftChordPressed;
-                _shiftChordListener.Dispose();
+                _keyboardChordListener.ChordPressed -= KeyboardChordListener_ChordPressed;
+                _keyboardChordListener.Dispose();
             }
             _lightTrayIcon?.Dispose();
             _darkTrayIcon?.Dispose();

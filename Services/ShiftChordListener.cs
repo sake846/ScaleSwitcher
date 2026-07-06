@@ -1,10 +1,11 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using ScaleSwitcher.Models;
 
 namespace ScaleSwitcher.Services
 {
-    internal sealed class ShiftChordListener : IDisposable
+    internal sealed class KeyboardChordListener : IDisposable
     {
         private const int WhKeyboardLl = 13;
         private const int WmKeyDown = 0x0100;
@@ -13,13 +14,19 @@ namespace ScaleSwitcher.Services
         private const int WmSysKeyUp = 0x0105;
         private const int VkLShift = 0xA0;
         private const int VkRShift = 0xA1;
+        private const int VkLControl = 0xA2;
+        private const int VkRControl = 0xA3;
+        private const int VkLMenu = 0xA4;
+        private const int VkRMenu = 0xA5;
 
         private readonly LowLevelKeyboardProc _hookCallback;
         private IntPtr _hook;
         private bool _chordTriggered;
+        private KeyboardSwitchMode _mode;
 
-        public ShiftChordListener()
+        public KeyboardChordListener(KeyboardSwitchMode mode)
         {
+            Mode = mode;
             _hookCallback = HookCallback;
             IntPtr moduleHandle = GetModuleHandle(null);
             if (moduleHandle == IntPtr.Zero)
@@ -34,7 +41,17 @@ namespace ScaleSwitcher.Services
             }
         }
 
-        public event EventHandler? ShiftChordPressed;
+        public KeyboardSwitchMode Mode
+        {
+            get => _mode;
+            set
+            {
+                _mode = value;
+                _chordTriggered = false;
+            }
+        }
+
+        public event EventHandler? ChordPressed;
 
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -48,20 +65,30 @@ namespace ScaleSwitcher.Services
                 bool isKeyDown = message is WmKeyDown or WmSysKeyDown;
                 bool isKeyUp = message is WmKeyUp or WmSysKeyUp;
 
-                if ((virtualKey == VkLShift || virtualKey == VkRShift) && (isKeyDown || isKeyUp))
+                var (leftKey, rightKey) = Mode switch
                 {
-                    bool leftShiftDown = (GetAsyncKeyState(VkLShift) & 0x8000) != 0;
-                    bool rightShiftDown = (GetAsyncKeyState(VkRShift) & 0x8000) != 0;
+                    KeyboardSwitchMode.Shift => (VkLShift, VkRShift),
+                    KeyboardSwitchMode.Control => (VkLControl, VkRControl),
+                    KeyboardSwitchMode.Alt => (VkLMenu, VkRMenu),
+                    _ => (0, 0)
+                };
 
-                    if (virtualKey == VkLShift) leftShiftDown = isKeyDown;
-                    if (virtualKey == VkRShift) rightShiftDown = isKeyDown;
+                if (leftKey != 0 &&
+                    (virtualKey == leftKey || virtualKey == rightKey) &&
+                    (isKeyDown || isKeyUp))
+                {
+                    bool leftDown = (GetAsyncKeyState(leftKey) & 0x8000) != 0;
+                    bool rightDown = (GetAsyncKeyState(rightKey) & 0x8000) != 0;
 
-                    if (leftShiftDown && rightShiftDown)
+                    if (virtualKey == leftKey) leftDown = isKeyDown;
+                    if (virtualKey == rightKey) rightDown = isKeyDown;
+
+                    if (leftDown && rightDown)
                     {
                         if (!_chordTriggered)
                         {
                             _chordTriggered = true;
-                            ShiftChordPressed?.Invoke(this, EventArgs.Empty);
+                            ChordPressed?.Invoke(this, EventArgs.Empty);
                         }
                     }
                     else
