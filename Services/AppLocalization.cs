@@ -186,5 +186,11 @@ namespace ScaleSwitcher.Services
             UiLanguage.English => "Save",
             _ => "保存"
         };
+
+        public string ExitConfirmMessage => _language switch
+        {
+            UiLanguage.English => "Are you sure you want to exit ScaleSwitcher?",
+            _ => "ScaleSwitcherを終了しますか？"
+        };
     }
 }

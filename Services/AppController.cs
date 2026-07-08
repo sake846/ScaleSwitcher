@@ -9,6 +9,8 @@ using ScaleSwitcher.Models;
 using ScaleSwitcher.Services;
 using ScaleSwitcher.Views;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("TestAutoStart")]
+
 namespace ScaleSwitcher.Services
 {
     public sealed class AppController : IDisposable
@@ -16,6 +18,7 @@ namespace ScaleSwitcher.Services
         private Forms.NotifyIcon _notifyIcon = null!;
         private AppSettings _settings = null!;
         private ISettingsService _settingsService = null!;
+        private IExitConfirmationService _exitConfirmationService = null!;
         private AppLocalization _localization = null!;
         private int _currentScaleCycleIndex = 0;
         private bool _hasScaleCyclePosition;
@@ -24,13 +27,14 @@ namespace ScaleSwitcher.Services
         private KeyboardChordListener? _keyboardChordListener;
 
         public AppController()
-            : this(new SettingsService())
+            : this(new SettingsService(), new WindowsExitConfirmationService())
         {
         }
 
-        internal AppController(ISettingsService settingsService)
+        internal AppController(ISettingsService settingsService, IExitConfirmationService exitConfirmationService)
         {
             _settingsService = settingsService;
+            _exitConfirmationService = exitConfirmationService;
             _settings = _settingsService.Load();
             _localization = new AppLocalization(_settings);
             _lightTrayIcon = LoadIcon("pack://application:,,,/Assets/app.light.ico");
@@ -367,7 +371,11 @@ namespace ScaleSwitcher.Services
 
         private void ExitApp()
         {
-            System.Windows.Application.Current.Shutdown();
+            var result = _exitConfirmationService.ConfirmExit("ScaleSwitcher", _localization.ExitConfirmMessage);
+            if (result == System.Windows.Forms.DialogResult.Yes)
+            {
+                System.Windows.Application.Current.Shutdown();
+            }
         }
 
         public void Dispose()
