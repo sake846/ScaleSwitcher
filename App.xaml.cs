@@ -19,17 +19,13 @@ namespace ScaleSwitcher
         private Icon? _lightTrayIcon;
         private Icon? _darkTrayIcon;
         private KeyboardChordListener? _keyboardChordListener;
-        private static System.Threading.Mutex? _mutex;
+        private const string SingleInstanceMutexName = @"Local\ScaleSwitcher.SingleInstance";
+        private System.Threading.Mutex? _singleInstanceMutex;
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            const string mutexName = "ScaleSwitcher_Unique_Mutex_Name_2026";
-            _mutex = new System.Threading.Mutex(true, mutexName, out bool createdNew);
-
-            if (!createdNew)
+            if (!TryAcquireSingleInstanceMutex())
             {
-                _mutex.Dispose();
-                _mutex = null;
                 Shutdown();
                 return;
             }
@@ -379,19 +375,38 @@ namespace ScaleSwitcher
             _lightTrayIcon?.Dispose();
             _darkTrayIcon?.Dispose();
 
-            if (_mutex != null)
+            ReleaseSingleInstanceMutex();
+            base.OnExit(e);
+        }
+
+        private bool TryAcquireSingleInstanceMutex()
+        {
+            _singleInstanceMutex = new System.Threading.Mutex(true, SingleInstanceMutexName, out var createdNew);
+            if (createdNew)
+            {
+                return true;
+            }
+
+            _singleInstanceMutex.Dispose();
+            _singleInstanceMutex = null;
+            return false;
+        }
+
+        private void ReleaseSingleInstanceMutex()
+        {
+            if (_singleInstanceMutex != null)
             {
                 try
                 {
-                    _mutex.ReleaseMutex();
+                    _singleInstanceMutex.ReleaseMutex();
                 }
                 catch
                 {
                     // Ignore
                 }
-                _mutex.Dispose();
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex = null;
             }
-            base.OnExit(e);
         }
     }
 }
