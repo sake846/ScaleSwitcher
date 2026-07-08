@@ -263,14 +263,14 @@ namespace ScaleSwitcher
             var runAtStartupItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_RunAtStartup)
             {
                 CheckOnClick = true,
-                Checked = StartupManager.IsRegistered()
+                Checked = AutoStartService.IsEnabled()
             };
             runAtStartupItem.CheckedChanged += (s, e) =>
             {
                 if (runAtStartupItem.Checked)
-                    StartupManager.Register();
+                    AutoStartService.Enable();
                 else
-                    StartupManager.Unregister();
+                    AutoStartService.Disable();
             };
             menu.Items.Add(runAtStartupItem);
 
