@@ -34,5 +34,6 @@ namespace ScaleSwitcher.Models
         public bool UseCustomDisplayName { get; init; } = false;
         public string CustomDisplayName { get; init; } = string.Empty;
         public KeyboardSwitchMode KeyboardSwitchMode { get; init; } = KeyboardSwitchMode.Shift;
+        public string? UiLanguage { get; init; } = "auto";
     }
 }

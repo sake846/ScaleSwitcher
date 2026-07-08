@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using ScaleSwitcher.Models;
 
 namespace ScaleSwitcher.Services
 {
@@ -13,11 +14,69 @@ namespace ScaleSwitcher.Services
     {
         private readonly UiLanguage _language;
 
-        public static AppLocalization Instance { get; } = new AppLocalization();
-
-        private AppLocalization()
+        public AppLocalization(AppSettings settings)
         {
-            _language = ResolveFromSystemCulture(CultureInfo.CurrentUICulture);
+            _language = ResolveLanguage(settings.UiLanguage);
+        }
+
+        public static UiLanguage ResolveLanguage(string? configuredLanguage)
+        {
+            if (TryParseConfiguredLanguage(configuredLanguage, out var configured))
+            {
+                return configured;
+            }
+
+            return ResolveFromSystemCulture(CultureInfo.CurrentUICulture);
+        }
+
+        private static bool TryParseConfiguredLanguage(string? configuredLanguage, out UiLanguage language)
+        {
+            language = UiLanguage.English;
+            if (string.IsNullOrWhiteSpace(configuredLanguage))
+            {
+                return false;
+            }
+
+            var normalized = configuredLanguage.Trim();
+            if (string.Equals(normalized, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (string.Equals(normalized, "ja", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "ja-JP", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "japanese", StringComparison.OrdinalIgnoreCase))
+            {
+                language = UiLanguage.Japanese;
+                return true;
+            }
+
+            if (string.Equals(normalized, "en", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "en-US", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "en-GB", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "english", StringComparison.OrdinalIgnoreCase))
+            {
+                language = UiLanguage.English;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static UiLanguage ResolveFromSystemCulture(CultureInfo culture)
+        {
+            for (var current = culture; current != CultureInfo.InvariantCulture; current = current.Parent)
+            {
+                if (string.Equals(current.TwoLetterISOLanguageName, "ja", StringComparison.OrdinalIgnoreCase))
+                {
+                    return UiLanguage.Japanese;
+                }
+                if (string.Equals(current.TwoLetterISOLanguageName, "en", StringComparison.OrdinalIgnoreCase))
+                {
+                    return UiLanguage.English;
+                }
+            }
+            return UiLanguage.English;
         }
 
         public string DisplayPrefix => _language switch
@@ -127,21 +186,5 @@ namespace ScaleSwitcher.Services
             UiLanguage.English => "Save",
             _ => "保存"
         };
-
-        private static UiLanguage ResolveFromSystemCulture(CultureInfo culture)
-        {
-            for (var current = culture; current != CultureInfo.InvariantCulture; current = current.Parent)
-            {
-                if (string.Equals(current.TwoLetterISOLanguageName, "ja", StringComparison.OrdinalIgnoreCase))
-                {
-                    return UiLanguage.Japanese;
-                }
-                if (string.Equals(current.TwoLetterISOLanguageName, "en", StringComparison.OrdinalIgnoreCase))
-                {
-                    return UiLanguage.English;
-                }
-            }
-            return UiLanguage.English;
-        }
     }
 }

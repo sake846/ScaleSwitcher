@@ -6,11 +6,11 @@ namespace ScaleSwitcher.Views
 {
     public partial class SettingsWindow : Window
     {
-        public SettingsWindow(ISettingsService settingsService)
+        public SettingsWindow(ISettingsService settingsService, AppLocalization localization)
         {
             InitializeComponent();
             
-            var vm = new SettingsViewModel(settingsService);
+            var vm = new SettingsViewModel(settingsService, localization);
             vm.RequestClose += (result) =>
             {
                 DialogResult = result;

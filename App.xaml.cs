@@ -15,6 +15,7 @@ namespace ScaleSwitcher
         private Forms.NotifyIcon _notifyIcon = null!;
         private AppSettings _settings = null!;
         private ISettingsService _settingsService = null!;
+        private AppLocalization _localization = null!;
         private int _currentScaleCycleIndex = 0;
         private bool _hasScaleCyclePosition;
         private Icon? _lightTrayIcon;
@@ -37,6 +38,7 @@ namespace ScaleSwitcher
 
             _settingsService = new SettingsService();
             _settings = _settingsService.Load();
+            _localization = new AppLocalization(_settings);
             _lightTrayIcon = LoadIcon("pack://application:,,,/Assets/app.light.ico");
             _darkTrayIcon = LoadIcon("pack://application:,,,/Assets/app.dark.ico");
 
@@ -191,7 +193,7 @@ namespace ScaleSwitcher
             {
                 var display = displays[0];
                 menu.Items.Add(CreateScaleSubMenu(display));
-                menu.Items.Add(CreateResolutionSubMenu(display));
+                menu.Items.Add(CreateResolutionSubMenu(display, _localization));
             }
             else
             {
@@ -202,7 +204,7 @@ namespace ScaleSwitcher
 
                     var displayMenu = new Forms.ToolStripMenuItem(displayName);
                     displayMenu.DropDownItems.Add(CreateScaleSubMenu(display));
-                    displayMenu.DropDownItems.Add(CreateResolutionSubMenu(display));
+                    displayMenu.DropDownItems.Add(CreateResolutionSubMenu(display, _localization));
 
                     menu.Items.Add(displayMenu);
                 }
@@ -218,7 +220,7 @@ namespace ScaleSwitcher
 
         private Forms.ToolStripMenuItem CreateScaleSubMenu(DisplayInfo display)
         {
-            var scaleSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Scale);
+            var scaleSubMenu = new Forms.ToolStripMenuItem(_localization.Menu_Scale);
             foreach (var dpi in display.AvailableDpis.OrderBy(d => d.Percentage))
             {
                 var dpiItem = new Forms.ToolStripMenuItem($"{dpi.Percentage}%")
@@ -245,9 +247,9 @@ namespace ScaleSwitcher
             return scaleSubMenu;
         }
 
-        private static Forms.ToolStripMenuItem CreateResolutionSubMenu(DisplayInfo display)
+        private static Forms.ToolStripMenuItem CreateResolutionSubMenu(DisplayInfo display, AppLocalization localization)
         {
-            var resSubMenu = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Resolution);
+            var resSubMenu = new Forms.ToolStripMenuItem(localization.Menu_Resolution);
             foreach (var res in display.AvailableResolutions)
             {
                 var resItem = new Forms.ToolStripMenuItem($"{res.Width} x {res.Height}")
@@ -262,7 +264,7 @@ namespace ScaleSwitcher
 
         private void AddSystemMenuItems(Forms.ContextMenuStrip menu)
         {
-            var runAtStartupItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_RunAtStartup)
+            var runAtStartupItem = new Forms.ToolStripMenuItem(_localization.Menu_RunAtStartup)
             {
                 CheckOnClick = true,
                 Checked = AutoStartService.IsEnabled()
@@ -276,17 +278,17 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(runAtStartupItem);
 
-            var keyboardSwitchItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_KeyboardSwitch)
+            var keyboardSwitchItem = new Forms.ToolStripMenuItem(_localization.Menu_KeyboardSwitch)
             {
                 Checked = _settings.KeyboardSwitchMode != KeyboardSwitchMode.Off
             };
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardOff, KeyboardSwitchMode.Off);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardControl, KeyboardSwitchMode.Control);
-            AddKeyboardSwitchMenuItem(keyboardSwitchItem, AppLocalization.Instance.Menu_KeyboardAlt, KeyboardSwitchMode.Alt);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardOff, KeyboardSwitchMode.Off);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardControl, KeyboardSwitchMode.Control);
+            AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardAlt, KeyboardSwitchMode.Alt);
             menu.Items.Add(keyboardSwitchItem);
 
-            var showDisplayInfoItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_ShowDisplayInfo)
+            var showDisplayInfoItem = new Forms.ToolStripMenuItem(_localization.Menu_ShowDisplayInfo)
             {
                 CheckOnClick = true,
                 Checked = DisplayManager.DisplayInfoOsdsVisible
@@ -300,13 +302,13 @@ namespace ScaleSwitcher
             };
             menu.Items.Add(showDisplayInfoItem);
 
-            var settingsItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Settings);
+            var settingsItem = new Forms.ToolStripMenuItem(_localization.Menu_Settings);
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
 
             menu.Items.Add(new Forms.ToolStripSeparator());
 
-            var exitItem = new Forms.ToolStripMenuItem(AppLocalization.Instance.Menu_Exit);
+            var exitItem = new Forms.ToolStripMenuItem(_localization.Menu_Exit);
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
         }
@@ -352,17 +354,19 @@ namespace ScaleSwitcher
                 return _settings.CustomDisplayName.Trim();
             }
 
-            string displayName = $"{AppLocalization.Instance.DisplayPrefix} {display.SettingsDisplayNumber}";
+            string displayName = $"{_localization.DisplayPrefix} {display.SettingsDisplayNumber}";
             if (display.IsPrimary) displayName += " (Primary)";
             return displayName;
         }
 
         private void OpenSettings()
         {
-            var settingsWindow = new SettingsWindow(_settingsService);
+            var settingsWindow = new SettingsWindow(_settingsService, _localization);
             if (settingsWindow.ShowDialog() == true)
             {
                 _hasScaleCyclePosition = false;
+                _settings = _settingsService.Load();
+                _localization = new AppLocalization(_settings);
                 // Refresh context menu after settings changed
                 UpdateContextMenu();
             }

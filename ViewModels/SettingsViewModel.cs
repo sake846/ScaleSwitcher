@@ -49,12 +49,12 @@ namespace ScaleSwitcher.ViewModels
         public string DisplayName { get; }
         public int Index { get; }
 
-        public DisplayItemViewModel(DisplayInfo display, int index)
+        public DisplayItemViewModel(DisplayInfo display, int index, AppLocalization localization)
         {
             Display = display;
             Index = index;
             
-            string name = $"{AppLocalization.Instance.DisplayPrefix} {display.SettingsDisplayNumber}";
+            string name = $"{localization.DisplayPrefix} {display.SettingsDisplayNumber}";
             if (display.IsPrimary) name += " (Primary)";
             DisplayName = name;
         }
@@ -63,6 +63,7 @@ namespace ScaleSwitcher.ViewModels
     public class SettingsViewModel : ViewModelBase
     {
         private readonly ISettingsService _settingsService;
+        private readonly AppLocalization _localization;
         private readonly AppSettings _settings;
         private readonly List<DisplayInfo> _rawDisplays;
         private DisplayItemViewModel? _selectedDisplay;
@@ -72,12 +73,12 @@ namespace ScaleSwitcher.ViewModels
 
         public event Action<bool>? RequestClose;
 
-        public string Title => AppLocalization.Instance.Settings_Title;
-        public string TargetDisplayHeader => AppLocalization.Instance.Settings_TargetDisplay;
-        public string UseCustomDisplayNameText => AppLocalization.Instance.Settings_UseCustomDisplayName;
-        public string CustomDisplayNameHeader => AppLocalization.Instance.Settings_CustomDisplayName;
-        public string ScalesHeader => AppLocalization.Instance.Settings_Scales;
-        public string SaveButtonText => AppLocalization.Instance.Settings_Save;
+        public string Title => _localization.Settings_Title;
+        public string TargetDisplayHeader => _localization.Settings_TargetDisplay;
+        public string UseCustomDisplayNameText => _localization.Settings_UseCustomDisplayName;
+        public string CustomDisplayNameHeader => _localization.Settings_CustomDisplayName;
+        public string ScalesHeader => _localization.Settings_Scales;
+        public string SaveButtonText => _localization.Settings_Save;
 
         public List<DisplayItemViewModel> Displays { get; }
         public ICommand SaveCommand { get; }
@@ -137,13 +138,14 @@ namespace ScaleSwitcher.ViewModels
             set => CustomDisplayName = value;
         }
 
-        public SettingsViewModel(ISettingsService settingsService)
+        public SettingsViewModel(ISettingsService settingsService, AppLocalization localization)
         {
             _settingsService = settingsService;
+            _localization = localization;
             _settings = _settingsService.Load();
             _rawDisplays = DisplayManager.GetDisplays();
 
-            Displays = _rawDisplays.Select((d, i) => new DisplayItemViewModel(d, i)).ToList();
+            Displays = _rawDisplays.Select((d, i) => new DisplayItemViewModel(d, i, _localization)).ToList();
             SaveCommand = new RelayCommand(Save);
 
             // Select default target display
