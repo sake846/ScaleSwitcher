@@ -20,7 +20,7 @@ namespace ScaleSwitcher.Models
         public static List<DisplayInfo> GetDisplays()
         {
             var displays = new List<DisplayInfo>();
-            var settings = SettingsManager.Load();
+            var settings = new ScaleSwitcher.Services.SettingsService().Load();
             const string effectiveDisplayNumberSource = DisplayNumberSources.TargetId;
             var diagnostics = new StringBuilder();
             AppendDiagnosticsHeader(diagnostics, settings.DisplayNumberSource, effectiveDisplayNumberSource);

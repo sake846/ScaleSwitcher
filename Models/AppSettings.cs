@@ -28,11 +28,11 @@ namespace ScaleSwitcher.Models
 
     public class AppSettings
     {
-        public int TargetMonitorIndex { get; set; } = 0;
-        public List<int> ActiveDpiPercentages { get; set; } = new() { 100, 200 };
-        public string DisplayNumberSource { get; set; } = DisplayNumberSources.TargetId;
-        public bool UseCustomDisplayName { get; set; } = false;
-        public string CustomDisplayName { get; set; } = string.Empty;
-        public KeyboardSwitchMode KeyboardSwitchMode { get; set; } = KeyboardSwitchMode.Shift;
+        public int TargetMonitorIndex { get; init; } = 0;
+        public List<int> ActiveDpiPercentages { get; init; } = new() { 100, 200 };
+        public string DisplayNumberSource { get; init; } = DisplayNumberSources.TargetId;
+        public bool UseCustomDisplayName { get; init; } = false;
+        public string CustomDisplayName { get; init; } = string.Empty;
+        public KeyboardSwitchMode KeyboardSwitchMode { get; init; } = KeyboardSwitchMode.Shift;
     }
 }

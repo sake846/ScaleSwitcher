@@ -14,6 +14,7 @@ namespace ScaleSwitcher
     {
         private Forms.NotifyIcon _notifyIcon = null!;
         private AppSettings _settings = null!;
+        private ISettingsService _settingsService = null!;
         private int _currentScaleCycleIndex = 0;
         private bool _hasScaleCyclePosition;
         private Icon? _lightTrayIcon;
@@ -34,7 +35,8 @@ namespace ScaleSwitcher
 
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-            _settings = SettingsManager.Load();
+            _settingsService = new SettingsService();
+            _settings = _settingsService.Load();
             _lightTrayIcon = LoadIcon("pack://application:,,,/Assets/app.light.ico");
             _darkTrayIcon = LoadIcon("pack://application:,,,/Assets/app.dark.ico");
 
@@ -127,7 +129,7 @@ namespace ScaleSwitcher
 
         private void CycleDpi(bool restoreCursorPosition)
         {
-            _settings = SettingsManager.Load(); // reload in case it changed
+            _settings = _settingsService.Load(); // reload in case it changed
             if (_settings.ActiveDpiPercentages.Count == 0) return;
 
             var displays = DisplayManager.GetDisplays();
@@ -176,7 +178,7 @@ namespace ScaleSwitcher
 
         private void UpdateContextMenu()
         {
-            _settings = SettingsManager.Load();
+            _settings = _settingsService.Load();
 
             var menu = _notifyIcon.ContextMenuStrip;
             if (menu == null) return;
@@ -320,8 +322,18 @@ namespace ScaleSwitcher
             };
             item.Click += (s, e) =>
             {
-                _settings.KeyboardSwitchMode = mode;
-                SettingsManager.Save(_settings);
+                var newSettings = new AppSettings
+                {
+                    TargetMonitorIndex = _settings.TargetMonitorIndex,
+                    ActiveDpiPercentages = _settings.ActiveDpiPercentages,
+                    DisplayNumberSource = _settings.DisplayNumberSource,
+                    UseCustomDisplayName = _settings.UseCustomDisplayName,
+                    CustomDisplayName = _settings.CustomDisplayName,
+                    KeyboardSwitchMode = mode
+                };
+                _settingsService.Save(newSettings);
+                _settings = newSettings;
+
                 if (_keyboardChordListener != null)
                 {
                     _keyboardChordListener.Mode = mode;
@@ -347,7 +359,7 @@ namespace ScaleSwitcher
 
         private void OpenSettings()
         {
-            var settingsWindow = new SettingsWindow();
+            var settingsWindow = new SettingsWindow(_settingsService);
             if (settingsWindow.ShowDialog() == true)
             {
                 _hasScaleCyclePosition = false;

@@ -62,6 +62,7 @@ namespace ScaleSwitcher.ViewModels
 
     public class SettingsViewModel : ViewModelBase
     {
+        private readonly ISettingsService _settingsService;
         private readonly AppSettings _settings;
         private readonly List<DisplayInfo> _rawDisplays;
         private DisplayItemViewModel? _selectedDisplay;
@@ -136,9 +137,10 @@ namespace ScaleSwitcher.ViewModels
             set => CustomDisplayName = value;
         }
 
-        public SettingsViewModel()
+        public SettingsViewModel(ISettingsService settingsService)
         {
-            _settings = SettingsManager.Load();
+            _settingsService = settingsService;
+            _settings = _settingsService.Load();
             _rawDisplays = DisplayManager.GetDisplays();
 
             Displays = _rawDisplays.Select((d, i) => new DisplayItemViewModel(d, i)).ToList();
@@ -183,18 +185,22 @@ namespace ScaleSwitcher.ViewModels
 
         private void Save()
         {
-            if (SelectedDisplay != null)
-            {
-                _settings.TargetMonitorIndex = SelectedDisplay.Index;
-            }
-            _settings.ActiveDpiPercentages = ScaleOptions
+            var activeDpiList = ScaleOptions
                 .Where(o => o.IsSelected)
                 .Select(o => o.Percentage)
                 .ToList();
-            _settings.UseCustomDisplayName = UseCustomDisplayName;
-            _settings.CustomDisplayName = (CustomDisplayName ?? string.Empty).Trim();
 
-            SettingsManager.Save(_settings);
+            var newSettings = new AppSettings
+            {
+                TargetMonitorIndex = SelectedDisplay?.Index ?? 0,
+                ActiveDpiPercentages = activeDpiList,
+                UseCustomDisplayName = UseCustomDisplayName,
+                CustomDisplayName = (CustomDisplayName ?? string.Empty).Trim(),
+                DisplayNumberSource = _settings.DisplayNumberSource,
+                KeyboardSwitchMode = _settings.KeyboardSwitchMode
+            };
+
+            _settingsService.Save(newSettings);
             RequestClose?.Invoke(true);
         }
     }

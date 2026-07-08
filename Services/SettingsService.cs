@@ -1,18 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using ScaleSwitcher.Models;
 
-namespace ScaleSwitcher.Models
+namespace ScaleSwitcher.Services
 {
-    public static class SettingsManager
+    public sealed class SettingsService : ISettingsService
     {
         private static readonly string ConfigPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ScaleSwitcher",
             "settings.json");
 
-        public static AppSettings Load()
+        public AppSettings Load()
         {
             try
             {
@@ -29,7 +29,7 @@ namespace ScaleSwitcher.Models
             return new AppSettings();
         }
 
-        public static void Save(AppSettings settings)
+        public void Save(AppSettings settings)
         {
             try
             {
