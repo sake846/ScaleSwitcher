@@ -27,6 +27,7 @@ namespace ScaleSwitcher.Models
         public int SettingsDisplayNumber { get; set; }
         public IntPtr MonitorHandle { get; set; }
         public string DeviceName { get; set; } = "";
+        public string HardwareId { get; set; } = "";
         public bool IsPrimary { get; set; }
         
         public List<ResolutionInfo> AvailableResolutions { get; set; } = new();

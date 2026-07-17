@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Interop;
+using Microsoft.Win32;
 
 namespace ScaleSwitcher.Models
 {
@@ -38,9 +39,12 @@ namespace ScaleSwitcher.Models
                     var info = new DisplayInfo
                     {
                         MonitorIndex = index,
-                        SettingsDisplayNumber = settingsDisplayNumbers.TryGetValue(mi.szDevice, out int settingsDisplayNumber)
-                            ? settingsDisplayNumber
+                        SettingsDisplayNumber = settingsDisplayNumbers.TryGetValue(mi.szDevice, out var config)
+                            ? config.DisplayNumber
                             : index + 1,
+                        HardwareId = settingsDisplayNumbers.TryGetValue(mi.szDevice, out var config2)
+                            ? config2.HardwareId
+                            : "",
                         MonitorHandle = hMonitor,
                         DeviceName = mi.szDevice,
                         IsPrimary = (mi.dwFlags & 1) != 0 // MONITORINFOF_PRIMARY
@@ -65,9 +69,9 @@ namespace ScaleSwitcher.Models
             return displays;
         }
 
-        private static Dictionary<string, int> GetWindowsDisplayNumbers(StringBuilder diagnostics, string displayNumberSource)
+        private static Dictionary<string, (int DisplayNumber, string HardwareId)> GetWindowsDisplayNumbers(StringBuilder diagnostics, string displayNumberSource)
         {
-            var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<string, (int DisplayNumber, string HardwareId)>(StringComparer.OrdinalIgnoreCase);
 
             if (NativeMethods.GetDisplayConfigBufferSizes(NativeMethods.QDC_ONLY_ACTIVE_PATHS, out uint pathCount, out uint modeCount) != 0)
             {
@@ -111,7 +115,7 @@ namespace ScaleSwitcher.Models
             int pathIndex,
             NativeMethods.DISPLAYCONFIG_PATH_INFO path,
             string displayNumberSource,
-            Dictionary<string, int> result,
+            Dictionary<string, (int DisplayNumber, string HardwareId)> result,
             StringBuilder diagnostics)
         {
             var sourceName = new NativeMethods.DISPLAYCONFIG_SOURCE_DEVICE_NAME
@@ -128,17 +132,15 @@ namespace ScaleSwitcher.Models
 
             string sourceDeviceName = "";
             int? gdiDeviceDisplayNumber = null;
-            int selectedDisplayNumber;
+            int selectedDisplayNumber = 0;
+            bool sourceNameSuccess = false;
 
             if (NativeMethods.DisplayConfigGetDeviceInfo(ref sourceName) == 0)
             {
                 sourceDeviceName = sourceName.viewGdiDeviceName.TrimEnd('\0');
                 gdiDeviceDisplayNumber = TryGetGdiDeviceNumber(sourceDeviceName);
                 selectedDisplayNumber = ResolveDisplayNumber(displayNumberSource, pathIndex, path, sourceDeviceName);
-                if (!string.IsNullOrWhiteSpace(sourceDeviceName))
-                {
-                    result.TryAdd(sourceDeviceName, selectedDisplayNumber);
-                }
+                sourceNameSuccess = true;
             }
             else
             {
@@ -175,6 +177,21 @@ namespace ScaleSwitcher.Models
                 edidProductCodeId = targetName.edidProductCodeId;
             }
 
+            string hardwareId = "";
+            if (!string.IsNullOrEmpty(targetDevicePath))
+            {
+                string[] parts = targetDevicePath.Split('#');
+                if (parts.Length > 1)
+                {
+                    hardwareId = parts[1];
+                }
+            }
+
+            if (sourceNameSuccess && !string.IsNullOrWhiteSpace(sourceDeviceName))
+            {
+                result.TryAdd(sourceDeviceName, (selectedDisplayNumber, hardwareId));
+            }
+
             diagnostics.AppendLine(
                 $"pathIndex={pathIndex}, sourceAdapter=({path.sourceInfo.adapterId.HighPart},{path.sourceInfo.adapterId.LowPart}), " +
                 $"sourceId={path.sourceInfo.id}, sourceModeInfoIdx={path.sourceInfo.modeInfoIdx}, sourceStatusFlags=0x{path.sourceInfo.statusFlags:X8}, " +
@@ -188,7 +205,7 @@ namespace ScaleSwitcher.Models
                 $"targetStatusFlags=0x{path.targetInfo.statusFlags:X8}, pathFlags=0x{path.flags:X8}, " +
                 $"targetNameResult={targetNameResult}, targetNameFlags=0x{targetNameFlags:X8}, connectorInstance={connectorInstance}, " +
                 $"edidManufactureId=0x{edidManufactureId:X4}, edidProductCodeId=0x{edidProductCodeId:X4}, " +
-                $"monitorFriendlyName={targetFriendlyName}, monitorDevicePath={targetDevicePath}");
+                $"monitorFriendlyName={targetFriendlyName}, monitorDevicePath={targetDevicePath}, hardwareId={hardwareId}");
         }
 
         private static int ResolveDisplayNumber(string displayNumberSource, int pathIndex, NativeMethods.DISPLAYCONFIG_PATH_INFO path, string sourceDeviceName)
@@ -279,6 +296,42 @@ namespace ScaleSwitcher.Models
 
         private static readonly Dictionary<string, int> RecommendedDpiCache = new();
 
+        private static int? GetRelativeIndexFromRegistry(string hardwareId)
+        {
+            if (string.IsNullOrWhiteSpace(hardwareId)) return null;
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers\ScaleFactors"))
+                {
+                    if (key != null)
+                    {
+                        foreach (var subkeyName in key.GetSubKeyNames())
+                        {
+                            if (subkeyName.StartsWith(hardwareId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                using (var subkey = key.OpenSubKey(subkeyName))
+                                {
+                                    if (subkey != null)
+                                    {
+                                        var val = subkey.GetValue("DpiValue");
+                                        if (val != null)
+                                        {
+                                            return Convert.ToInt32(val);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore registry read errors
+            }
+            return null;
+        }
+
         private static void PopulateDpis(DisplayInfo info)
         {
             // Get current DPI percentage
@@ -292,19 +345,27 @@ namespace ScaleSwitcher.Models
             }
             else
             {
-                // Get relative index using SPI_GETLOGICALDPIOVERRIDE
                 int currentRelativeIndex = 0;
-                IntPtr ptr = Marshal.AllocHGlobal(4);
-                try
+                int? registryRelativeIndex = GetRelativeIndexFromRegistry(info.HardwareId);
+                if (registryRelativeIndex.HasValue)
                 {
-                    if (NativeMethods.SystemParametersInfo(NativeMethods.SPI_GETLOGICALDPIOVERRIDE, info.MonitorIndex, ptr, 0))
-                    {
-                        currentRelativeIndex = Marshal.ReadInt32(ptr);
-                    }
+                    currentRelativeIndex = registryRelativeIndex.Value;
                 }
-                finally
+                else
                 {
-                    Marshal.FreeHGlobal(ptr);
+                    // Fallback to SPI_GETLOGICALDPIOVERRIDE
+                    IntPtr ptr = Marshal.AllocHGlobal(4);
+                    try
+                    {
+                        if (NativeMethods.SystemParametersInfo(NativeMethods.SPI_GETLOGICALDPIOVERRIDE, info.MonitorIndex, ptr, 0))
+                        {
+                            currentRelativeIndex = Marshal.ReadInt32(ptr);
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(ptr);
+                    }
                 }
 
                 int arrayIndex = Array.IndexOf(DpiArray, currentPercentage);
