@@ -16,14 +16,6 @@ namespace ScaleSwitcher.Models
         public const string SourceId = "SourceId";
         public const string TargetId = "TargetId";
         public const string GdiDeviceName = "GdiDeviceName";
-
-        public static readonly string[] All =
-        {
-            PathOrder,
-            SourceId,
-            TargetId,
-            GdiDeviceName
-        };
     }
 
     public class AppSettings

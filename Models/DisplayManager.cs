@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Interop;
 using Microsoft.Win32;
 
@@ -21,30 +19,21 @@ namespace ScaleSwitcher.Models
         public static List<DisplayInfo> GetDisplays()
         {
             var displays = new List<DisplayInfo>();
-            var settings = new ScaleSwitcher.Services.SettingsService().Load();
-            const string effectiveDisplayNumberSource = DisplayNumberSources.TargetId;
-            var diagnostics = new StringBuilder();
-            AppendDiagnosticsHeader(diagnostics, settings.DisplayNumberSource, effectiveDisplayNumberSource);
-            var settingsDisplayNumbers = GetWindowsDisplayNumbers(diagnostics, effectiveDisplayNumberSource);
+            var settingsDisplayNumbers = GetWindowsDisplayNumbers(DisplayNumberSources.TargetId);
             int index = 0;
 
-            diagnostics.AppendLine();
-            diagnostics.AppendLine("[EnumDisplayMonitors]");
             NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, delegate (IntPtr hMonitor, IntPtr hdcMonitor, ref NativeMethods.Rect lprcMonitor, IntPtr dwData)
             {
                 var mi = new NativeMethods.MONITORINFOEX();
                 mi.cbSize = Marshal.SizeOf(typeof(NativeMethods.MONITORINFOEX));
                 if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
                 {
+                    bool hasConfig = settingsDisplayNumbers.TryGetValue(mi.szDevice, out var config);
                     var info = new DisplayInfo
                     {
                         MonitorIndex = index,
-                        SettingsDisplayNumber = settingsDisplayNumbers.TryGetValue(mi.szDevice, out var config)
-                            ? config.DisplayNumber
-                            : index + 1,
-                        HardwareId = settingsDisplayNumbers.TryGetValue(mi.szDevice, out var config2)
-                            ? config2.HardwareId
-                            : "",
+                        SettingsDisplayNumber = hasConfig ? config.DisplayNumber : index + 1,
+                        HardwareId = hasConfig ? config.HardwareId : "",
                         MonitorHandle = hMonitor,
                         DeviceName = mi.szDevice,
                         IsPrimary = (mi.dwFlags & 1) != 0 // MONITORINFOF_PRIMARY
@@ -52,30 +41,21 @@ namespace ScaleSwitcher.Models
 
                     PopulateResolutions(info);
                     PopulateDpis(info);
-                    
                     displays.Add(info);
-                    diagnostics.AppendLine(
-                        $"index={index}, device={mi.szDevice}, assignedDisplayNumber={info.SettingsDisplayNumber}, isPrimary={info.IsPrimary}, " +
-                        $"monitorRect=({mi.rcMonitor.left},{mi.rcMonitor.top})-({mi.rcMonitor.right},{mi.rcMonitor.bottom}), " +
-                        $"workRect=({mi.rcWork.left},{mi.rcWork.top})-({mi.rcWork.right},{mi.rcWork.bottom})");
                     index++;
                 }
                 return true;
             }, IntPtr.Zero);
 
-            AppendWindowsFormsScreenDiagnostics(diagnostics);
-            WriteDisplayDiagnostics(diagnostics);
-
             return displays;
         }
 
-        private static Dictionary<string, (int DisplayNumber, string HardwareId)> GetWindowsDisplayNumbers(StringBuilder diagnostics, string displayNumberSource)
+        private static Dictionary<string, (int DisplayNumber, string HardwareId)> GetWindowsDisplayNumbers(string displayNumberSource)
         {
             var result = new Dictionary<string, (int DisplayNumber, string HardwareId)>(StringComparer.OrdinalIgnoreCase);
 
             if (NativeMethods.GetDisplayConfigBufferSizes(NativeMethods.QDC_ONLY_ACTIVE_PATHS, out uint pathCount, out uint modeCount) != 0)
             {
-                diagnostics.AppendLine("GetDisplayConfigBufferSizes failed.");
                 return result;
             }
 
@@ -83,29 +63,12 @@ namespace ScaleSwitcher.Models
             var modes = new NativeMethods.DISPLAYCONFIG_MODE_INFO[modeCount];
             if (NativeMethods.QueryDisplayConfig(NativeMethods.QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes, IntPtr.Zero) != 0)
             {
-                diagnostics.AppendLine("QueryDisplayConfig failed.");
                 return result;
             }
 
-            diagnostics.AppendLine("[QueryDisplayConfig]");
-            diagnostics.AppendLine($"pathCount={pathCount}, modeCount={modeCount}");
-            diagnostics.AppendLine("[DISPLAYCONFIG_MODE_INFO]");
-            for (int i = 0; i < modeCount; i++)
-            {
-                diagnostics.AppendLine(
-                    $"modeIndex={i}, infoType={modes[i].infoType}, id={modes[i].id}, " +
-                    $"adapter=({modes[i].adapterId.HighPart},{modes[i].adapterId.LowPart}), " +
-                    $"sourceWidth={modes[i].modeInfo.sourceMode.width}, sourceHeight={modes[i].modeInfo.sourceMode.height}, " +
-                    $"sourcePixelFormat={modes[i].modeInfo.sourceMode.pixelFormat}, " +
-                    $"sourcePosition=({modes[i].modeInfo.sourceMode.position.x},{modes[i].modeInfo.sourceMode.position.y}), " +
-                    $"targetActiveSize={modes[i].modeInfo.targetMode.targetVideoSignalInfo.activeSize.cx}x{modes[i].modeInfo.targetMode.targetVideoSignalInfo.activeSize.cy}, " +
-                    $"targetTotalSize={modes[i].modeInfo.targetMode.targetVideoSignalInfo.totalSize.cx}x{modes[i].modeInfo.targetMode.targetVideoSignalInfo.totalSize.cy}");
-            }
-
-            diagnostics.AppendLine("[DISPLAYCONFIG_PATH_INFO]");
             for (int i = 0; i < pathCount; i++)
             {
-                ProcessDisplayConfigPath(i, paths[i], displayNumberSource, result, diagnostics);
+                ProcessDisplayConfigPath(i, paths[i], displayNumberSource, result);
             }
 
             return result;
@@ -115,8 +78,7 @@ namespace ScaleSwitcher.Models
             int pathIndex,
             NativeMethods.DISPLAYCONFIG_PATH_INFO path,
             string displayNumberSource,
-            Dictionary<string, (int DisplayNumber, string HardwareId)> result,
-            StringBuilder diagnostics)
+            Dictionary<string, (int DisplayNumber, string HardwareId)> result)
         {
             var sourceName = new NativeMethods.DISPLAYCONFIG_SOURCE_DEVICE_NAME
             {
@@ -131,21 +93,12 @@ namespace ScaleSwitcher.Models
             };
 
             string sourceDeviceName = "";
-            int? gdiDeviceDisplayNumber = null;
-            int selectedDisplayNumber = 0;
-            bool sourceNameSuccess = false;
-
             if (NativeMethods.DisplayConfigGetDeviceInfo(ref sourceName) == 0)
             {
                 sourceDeviceName = sourceName.viewGdiDeviceName.TrimEnd('\0');
-                gdiDeviceDisplayNumber = TryGetGdiDeviceNumber(sourceDeviceName);
-                selectedDisplayNumber = ResolveDisplayNumber(displayNumberSource, pathIndex, path, sourceDeviceName);
-                sourceNameSuccess = true;
             }
-            else
-            {
-                selectedDisplayNumber = ResolveDisplayNumber(displayNumberSource, pathIndex, path, sourceDeviceName);
-            }
+
+            int selectedDisplayNumber = ResolveDisplayNumber(displayNumberSource, pathIndex, path, sourceDeviceName);
 
             var targetName = new NativeMethods.DISPLAYCONFIG_TARGET_DEVICE_NAME
             {
@@ -160,21 +113,10 @@ namespace ScaleSwitcher.Models
                 monitorDevicePath = new string('\0', 128)
             };
 
-            string targetFriendlyName = "";
             string targetDevicePath = "";
-            uint targetNameFlags = 0;
-            uint connectorInstance = 0;
-            ushort edidManufactureId = 0;
-            ushort edidProductCodeId = 0;
-            int targetNameResult = NativeMethods.DisplayConfigGetDeviceInfo(ref targetName);
-            if (targetNameResult == 0)
+            if (NativeMethods.DisplayConfigGetDeviceInfo(ref targetName) == 0)
             {
-                targetFriendlyName = targetName.monitorFriendlyDeviceName.TrimEnd('\0');
                 targetDevicePath = targetName.monitorDevicePath.TrimEnd('\0');
-                targetNameFlags = targetName.flags;
-                connectorInstance = targetName.connectorInstance;
-                edidManufactureId = targetName.edidManufactureId;
-                edidProductCodeId = targetName.edidProductCodeId;
             }
 
             string hardwareId = "";
@@ -187,25 +129,10 @@ namespace ScaleSwitcher.Models
                 }
             }
 
-            if (sourceNameSuccess && !string.IsNullOrWhiteSpace(sourceDeviceName))
+            if (!string.IsNullOrWhiteSpace(sourceDeviceName))
             {
                 result.TryAdd(sourceDeviceName, (selectedDisplayNumber, hardwareId));
             }
-
-            diagnostics.AppendLine(
-                $"pathIndex={pathIndex}, sourceAdapter=({path.sourceInfo.adapterId.HighPart},{path.sourceInfo.adapterId.LowPart}), " +
-                $"sourceId={path.sourceInfo.id}, sourceModeInfoIdx={path.sourceInfo.modeInfoIdx}, sourceStatusFlags=0x{path.sourceInfo.statusFlags:X8}, " +
-                $"gdiDevice={sourceDeviceName}, pathOrderDisplayNumber={pathIndex + 1}, sourceIdDisplayNumber={(int)path.sourceInfo.id + 1}, " +
-                $"targetIdDisplayNumber={(int)path.targetInfo.id + 1}, gdiDeviceDisplayNumber={gdiDeviceDisplayNumber?.ToString() ?? ""}, " +
-                $"selectedDisplayNumber={selectedDisplayNumber}, " +
-                $"targetAdapter=({path.targetInfo.adapterId.HighPart},{path.targetInfo.adapterId.LowPart}), targetId={path.targetInfo.id}, " +
-                $"targetModeInfoIdx={path.targetInfo.modeInfoIdx}, outputTechnology={path.targetInfo.outputTechnology}, rotation={path.targetInfo.rotation}, " +
-                $"scaling={path.targetInfo.scaling}, refresh={path.targetInfo.refreshRate.Numerator}/{path.targetInfo.refreshRate.Denominator}, " +
-                $"scanLineOrdering={path.targetInfo.scanLineOrdering}, targetAvailable={path.targetInfo.targetAvailable}, " +
-                $"targetStatusFlags=0x{path.targetInfo.statusFlags:X8}, pathFlags=0x{path.flags:X8}, " +
-                $"targetNameResult={targetNameResult}, targetNameFlags=0x{targetNameFlags:X8}, connectorInstance={connectorInstance}, " +
-                $"edidManufactureId=0x{edidManufactureId:X4}, edidProductCodeId=0x{edidProductCodeId:X4}, " +
-                $"monitorFriendlyName={targetFriendlyName}, monitorDevicePath={targetDevicePath}, hardwareId={hardwareId}");
         }
 
         private static int ResolveDisplayNumber(string displayNumberSource, int pathIndex, NativeMethods.DISPLAYCONFIG_PATH_INFO path, string sourceDeviceName)
@@ -230,45 +157,6 @@ namespace ScaleSwitcher.Models
             return int.TryParse(sourceDeviceName[prefix.Length..], out int displayNumber)
                 ? displayNumber
                 : null;
-        }
-
-        private static void AppendDiagnosticsHeader(StringBuilder diagnostics, string configuredDisplayNumberSource, string effectiveDisplayNumberSource)
-        {
-            diagnostics.AppendLine("ScaleSwitcher display diagnostics");
-            diagnostics.AppendLine($"timestamp={DateTimeOffset.Now:O}");
-            diagnostics.AppendLine($"baseDirectory={AppContext.BaseDirectory}");
-            diagnostics.AppendLine($"machineName={Environment.MachineName}");
-            diagnostics.AppendLine($"osVersion={Environment.OSVersion}");
-            diagnostics.AppendLine($"configuredDisplayNumberSource={configuredDisplayNumberSource}");
-            diagnostics.AppendLine($"effectiveDisplayNumberSource={effectiveDisplayNumberSource}");
-            diagnostics.AppendLine("effectiveDisplayNumberFormula=DISPLAYCONFIG_PATH_INFO.targetInfo.id + 1");
-        }
-
-        private static void AppendWindowsFormsScreenDiagnostics(StringBuilder diagnostics)
-        {
-            diagnostics.AppendLine();
-            diagnostics.AppendLine("[System.Windows.Forms.Screen]");
-            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
-            {
-                diagnostics.AppendLine(
-                    $"device={screen.DeviceName}, primary={screen.Primary}, " +
-                    $"bounds=({screen.Bounds.Left},{screen.Bounds.Top})-({screen.Bounds.Right},{screen.Bounds.Bottom}), " +
-                    $"workingArea=({screen.WorkingArea.Left},{screen.WorkingArea.Top})-({screen.WorkingArea.Right},{screen.WorkingArea.Bottom}), " +
-                    $"bitsPerPixel={screen.BitsPerPixel}");
-            }
-        }
-
-        private static void WriteDisplayDiagnostics(StringBuilder diagnostics)
-        {
-            try
-            {
-                string path = Path.Combine(AppContext.BaseDirectory, "ScaleSwitcher.DisplayDiagnostics.log");
-                File.WriteAllText(path, diagnostics.ToString(), Encoding.UTF8);
-            }
-            catch
-            {
-                // Diagnostics must not prevent display enumeration.
-            }
         }
 
         private static void PopulateResolutions(DisplayInfo info)

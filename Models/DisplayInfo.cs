@@ -3,14 +3,12 @@ using System.Collections.Generic;
 
 namespace ScaleSwitcher.Models
 {
-    public class ResolutionInfo
+    public record ResolutionInfo
     {
         public int Width { get; set; }
         public int Height { get; set; }
         
         public override string ToString() => $"{Width} x {Height}";
-        public override bool Equals(object? obj) => obj is ResolutionInfo r && r.Width == Width && r.Height == Height;
-        public override int GetHashCode() => HashCode.Combine(Width, Height);
     }
 
     public class DpiInfo
