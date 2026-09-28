@@ -85,6 +85,12 @@ namespace ScaleSwitcher.Services
             _ => "ディスプレイ"
         };
 
+        public string PrimaryLabel => _language switch
+        {
+            UiLanguage.English => "Primary",
+            _ => "プライマリ"
+        };
+
         public string Menu_Scale => _language switch
         {
             UiLanguage.English => "Scale",
@@ -123,8 +129,14 @@ namespace ScaleSwitcher.Services
 
         public string Settings_Title => _language switch
         {
-            UiLanguage.English => "ScaleSwitcher Settings",
-            _ => "ScaleSwitcher 設定"
+            UiLanguage.English => "ScaleSwitcher — Settings",
+            _ => "ScaleSwitcher — 設定"
+        };
+
+        public string Settings_HeaderDescription => _language switch
+        {
+            UiLanguage.English => "Configure what to switch when you left-click or use the keyboard shortcut.",
+            _ => "左クリックまたはショートカットで切り替える内容を設定します。"
         };
 
         public string Settings_TargetDisplay => _language switch
@@ -135,8 +147,14 @@ namespace ScaleSwitcher.Services
 
         public string Settings_Scales => _language switch
         {
-            UiLanguage.English => "Available Scales for Rotation:",
-            _ => "ローテーションに含めるスケーリング:"
+            UiLanguage.English => "Scales to Cycle",
+            _ => "切り替える倍率"
+        };
+
+        public string Settings_ScalesDescription => _language switch
+        {
+            UiLanguage.English => "Select at least one scale to cycle through when switching.",
+            _ => "切り替え時にローテーションする倍率を 1 つ以上選んでください。"
         };
 
         public string Menu_KeyboardSwitch => _language switch
@@ -185,6 +203,24 @@ namespace ScaleSwitcher.Services
         {
             UiLanguage.English => "Save",
             _ => "保存"
+        };
+
+        public string Settings_Cancel => _language switch
+        {
+            UiLanguage.English => "Cancel",
+            _ => "キャンセル"
+        };
+
+        public string Settings_About => _language switch
+        {
+            UiLanguage.English => "About",
+            _ => "このアプリについて"
+        };
+
+        public string Settings_NoScaleError => _language switch
+        {
+            UiLanguage.English => "Select at least one scale before saving.",
+            _ => "倍率を 1 件以上選んでから保存してください。"
         };
 
         public string ExitConfirmMessage => _language switch

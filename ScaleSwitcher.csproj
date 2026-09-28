@@ -18,4 +18,10 @@
     <Resource Include="Assets\app.dark.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="version.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

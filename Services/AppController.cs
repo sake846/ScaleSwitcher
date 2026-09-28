@@ -185,7 +185,8 @@ namespace ScaleSwitcher.Services
             menu.Items.Clear();
 
             var displays = DisplayManager.GetDisplays();
-            
+
+            // --- Group 1: Display operations ---
             if (displays.Count == 1)
             {
                 var display = displays[0];
@@ -261,6 +262,7 @@ namespace ScaleSwitcher.Services
 
         private void AddSystemMenuItems(Forms.ContextMenuStrip menu)
         {
+            // --- Group 2: Behavior settings ---
             var runAtStartupItem = new Forms.ToolStripMenuItem(_localization.Menu_RunAtStartup)
             {
                 CheckOnClick = true,
@@ -299,6 +301,9 @@ namespace ScaleSwitcher.Services
             };
             menu.Items.Add(showDisplayInfoItem);
 
+            menu.Items.Add(new Forms.ToolStripSeparator());
+
+            // --- Group 3: App operations ---
             var settingsItem = new Forms.ToolStripMenuItem(_localization.Menu_Settings);
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
@@ -353,7 +358,7 @@ namespace ScaleSwitcher.Services
             }
 
             string displayName = $"{_localization.DisplayPrefix} {display.SettingsDisplayNumber}";
-            if (display.IsPrimary) displayName += " (Primary)";
+            if (display.IsPrimary) displayName += $" ({_localization.PrimaryLabel})";
             return displayName;
         }
 

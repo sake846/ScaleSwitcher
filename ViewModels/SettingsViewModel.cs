@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Windows;
 using System.Windows.Input;
 using ScaleSwitcher.Models;
 using ScaleSwitcher.Services;
@@ -53,9 +56,9 @@ namespace ScaleSwitcher.ViewModels
         {
             Display = display;
             Index = index;
-            
+
             string name = $"{localization.DisplayPrefix} {display.SettingsDisplayNumber}";
-            if (display.IsPrimary) name += " (Primary)";
+            if (display.IsPrimary) name += $" ({localization.PrimaryLabel})";
             DisplayName = name;
         }
     }
@@ -70,18 +73,30 @@ namespace ScaleSwitcher.ViewModels
         private bool _useCustomDisplayName;
         private string _customDisplayName = string.Empty;
         private ObservableCollection<ScaleOptionViewModel> _scaleOptions = new();
+        private bool _noScaleError;
 
         public event Action<bool>? RequestClose;
 
-        public string Title => _localization.Settings_Title;
+        // ---- Localized strings ----
+        public string Title            => _localization.Settings_Title;
+        public string HeaderDescription => _localization.Settings_HeaderDescription;
         public string TargetDisplayHeader => _localization.Settings_TargetDisplay;
         public string UseCustomDisplayNameText => _localization.Settings_UseCustomDisplayName;
-        public string CustomDisplayNameHeader => _localization.Settings_CustomDisplayName;
-        public string ScalesHeader => _localization.Settings_Scales;
-        public string SaveButtonText => _localization.Settings_Save;
+        public string CustomDisplayNameHeader  => _localization.Settings_CustomDisplayName;
+        public string ScalesHeader       => _localization.Settings_Scales;
+        public string ScalesDescription  => _localization.Settings_ScalesDescription;
+        public string SaveButtonText     => _localization.Settings_Save;
+        public string CancelButtonText   => _localization.Settings_Cancel;
+        public string AboutSectionHeader => _localization.Settings_About;
+        public string NoScaleSelectedMessage => _localization.Settings_NoScaleError;
+        public string VersionText { get; }
+
+        public Visibility NoScaleErrorVisible =>
+            _noScaleError ? Visibility.Visible : Visibility.Collapsed;
 
         public List<DisplayItemViewModel> Displays { get; }
-        public ICommand SaveCommand { get; }
+        public ICommand SaveCommand   { get; }
+        public ICommand CancelCommand { get; }
 
         public DisplayItemViewModel? SelectedDisplay
         {
@@ -146,7 +161,8 @@ namespace ScaleSwitcher.ViewModels
             _rawDisplays = DisplayManager.GetDisplays();
 
             Displays = _rawDisplays.Select((d, i) => new DisplayItemViewModel(d, i, _localization)).ToList();
-            SaveCommand = new RelayCommand(Save);
+            SaveCommand   = new RelayCommand(Save);
+            CancelCommand = new RelayCommand(Cancel);
 
             // Select default target display
             int selectedIndex = _settings.TargetMonitorIndex;
@@ -161,6 +177,30 @@ namespace ScaleSwitcher.ViewModels
 
             UseCustomDisplayName = _settings.UseCustomDisplayName;
             CustomDisplayName = _settings.CustomDisplayName ?? string.Empty;
+
+            VersionText = ReadVersion();
+        }
+
+        private static string ReadVersion()
+        {
+            try
+            {
+                // Look for version.txt next to the executing assembly
+                string? assemblyDir = Path.GetDirectoryName(
+                    Assembly.GetExecutingAssembly().Location);
+                if (assemblyDir == null) return "Unknown";
+
+                string versionFile = Path.Combine(assemblyDir, "version.txt");
+                if (!File.Exists(versionFile)) return "Unknown";
+
+                string raw = File.ReadAllText(versionFile);
+                string trimmed = raw.Trim();
+                return string.IsNullOrEmpty(trimmed) ? "Unknown" : trimmed;
+            }
+            catch
+            {
+                return "Unknown";
+            }
         }
 
         private void PopulateScales(DisplayInfo? display)
@@ -192,6 +232,17 @@ namespace ScaleSwitcher.ViewModels
                 .Select(o => o.Percentage)
                 .ToList();
 
+            // Validate: at least one scale must be selected
+            if (activeDpiList.Count == 0)
+            {
+                _noScaleError = true;
+                OnPropertyChanged(nameof(NoScaleErrorVisible));
+                return;
+            }
+
+            _noScaleError = false;
+            OnPropertyChanged(nameof(NoScaleErrorVisible));
+
             var newSettings = new AppSettings
             {
                 TargetMonitorIndex = SelectedDisplay?.Index ?? 0,
@@ -204,6 +255,11 @@ namespace ScaleSwitcher.ViewModels
 
             _settingsService.Save(newSettings);
             RequestClose?.Invoke(true);
+        }
+
+        private void Cancel()
+        {
+            RequestClose?.Invoke(false);
         }
     }
 }
