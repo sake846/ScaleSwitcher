@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:ScaleSwitcher.ViewModels"
         Title="{Binding Title}"
         MinWidth="320" MinHeight="480"
-        SizeToContent="Height"
+        SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -52,7 +52,7 @@
 
         <!-- ===== Scrollable content ===== -->
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="16,12,16,12">
+            <StackPanel Margin="16,14,16,14">
 
                 <!-- Section 1: Target Display -->
                 <TextBlock Text="{Binding TargetDisplayHeader}"
@@ -61,19 +61,21 @@
                           SelectedItem="{Binding SelectedDisplay, Mode=TwoWay}"
                           DisplayMemberPath="DisplayName"
                           Height="32"
+                          VerticalContentAlignment="Center"
                           Margin="0,0,0,16"
                           AutomationProperties.Name="{Binding TargetDisplayHeader}"/>
 
                 <!-- Section 2: Display Name -->
+                <TextBlock Text="{Binding CustomDisplayNameHeader}"
+                           Style="{StaticResource TextStyle.SectionHeader}"/>
                 <CheckBox Content="{Binding UseCustomDisplayNameText}"
                           IsChecked="{Binding UseCustomDisplayName, Mode=TwoWay}"
+                          VerticalContentAlignment="Center"
                           Margin="0,0,0,6"/>
-                <TextBlock Text="{Binding CustomDisplayNameHeader}"
-                           Style="{StaticResource TextStyle.Caption}"
-                           Margin="0,0,0,4"/>
                 <TextBox Text="{Binding DisplayNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          IsEnabled="{Binding UseCustomDisplayName}"
                          Height="32"
+                         VerticalContentAlignment="Center"
                          Margin="0,0,0,16"
                          AutomationProperties.Name="{Binding CustomDisplayNameHeader}"/>
 
@@ -88,8 +90,10 @@
                         <DataTemplate>
                             <CheckBox Content="{Binding DisplayText}"
                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                      Height="32"
-                                      Margin="0,1"/>
+                                      VerticalContentAlignment="Center"
+                                      Padding="4,0,0,0"
+                                      Height="28"
+                                      Margin="0,2"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -104,13 +108,20 @@
                 <!-- Section: About this app -->
                 <TextBlock Text="{Binding AboutSectionHeader}"
                            Style="{StaticResource TextStyle.SectionHeader}"/>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="ScaleSwitcher  "
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="ScaleSwitcher"
                                Style="{StaticResource TextStyle.Body}"/>
-                    <TextBlock Text="{Binding VersionText}"
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding VersionText}"
                                Style="{StaticResource TextStyle.Body}"
                                Foreground="{StaticResource Brush.TextMuted}"/>
-                </StackPanel>
+                </Grid>
 
             </StackPanel>
         </ScrollViewer>
