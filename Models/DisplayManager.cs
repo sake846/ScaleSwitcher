@@ -376,14 +376,17 @@ namespace ScaleSwitcher.Models
             return success;
         }
 
-        public static void ShowDisplayInfoOsds()
+        public static void ShowDisplayInfoOsds(Services.AppLocalization? localization = null)
         {
             HideDisplayInfoOsds();
 
+            var loc = localization ?? new Services.AppLocalization(new AppSettings());
             var displays = GetDisplays();
             foreach (var display in displays)
             {
-                var osd = ShowOsd(BuildDisplayInfoMessage(display), display, 30, captureMouse: false, hideCursor: false);
+                string message = BuildDisplayInfoMessage(display, loc);
+                double fontSize = CalculateOsdFontSize(message, display, 24);
+                var osd = ShowOsd(message, display, fontSize, captureMouse: false, hideCursor: false);
                 if (osd != null)
                 {
                     DisplayInfoOsds.Add(osd);
@@ -412,23 +415,42 @@ namespace ScaleSwitcher.Models
             }
         }
 
-        private static string BuildDisplayInfoMessage(DisplayInfo display)
+        private static string BuildDisplayInfoMessage(DisplayInfo display, Services.AppLocalization localization)
         {
             string resolution = display.CurrentResolution != null
                 ? $"{display.CurrentResolution.Width}x{display.CurrentResolution.Height}"
-                : "unknown";
-            string dpi = display.CurrentDpi != null ? $"{display.CurrentDpi.Percentage}%" : "unknown";
+                : localization.Settings_VersionUnknown;
+            string dpi = display.CurrentDpi != null ? $"{display.CurrentDpi.Percentage}%" : localization.Settings_VersionUnknown;
+            string primaryText = display.IsPrimary ? localization.DisplayInfo_Yes : localization.DisplayInfo_No;
 
             return string.Join(Environment.NewLine,
-                $"Display: {display.SettingsDisplayNumber}",
-                $"Primary: {display.IsPrimary}",
-                $"Resolution: {resolution}",
-                $"Scale: {dpi}");
+                $"{localization.DisplayInfo_Display}: {display.SettingsDisplayNumber}",
+                $"{localization.PrimaryLabel}: {primaryText}",
+                $"{localization.DisplayInfo_Resolution}: {resolution}",
+                $"{localization.DisplayInfo_Scale}: {dpi}");
+        }
+
+        private static double CalculateOsdFontSize(string message, DisplayInfo display, double baseFontSize)
+        {
+            double size = baseFontSize;
+
+            // Adapt font size if message is lengthy (e.g. custom display names) to prevent screen overflow
+            if (message.Length > 20)
+            {
+                size = Math.Max(18.0, size * 0.85);
+            }
+            if (message.Length > 40)
+            {
+                size = Math.Max(16.0, size * 0.75);
+            }
+
+            return Math.Clamp(size, 16.0, 48.0);
         }
 
         private static ScaleSwitcher.Views.OsdWindow? ShowOsd(string message, DisplayInfo display)
         {
-            return ShowOsd(message, display, 48, captureMouse: true, hideCursor: true);
+            double fontSize = CalculateOsdFontSize(message, display, 36);
+            return ShowOsd(message, display, fontSize, captureMouse: true, hideCursor: true);
         }
 
         private static ScaleSwitcher.Views.OsdWindow? ShowOsd(string message, DisplayInfo display, double fontSize, bool captureMouse, bool hideCursor)

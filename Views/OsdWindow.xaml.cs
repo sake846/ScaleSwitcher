@@ -6,7 +6,7 @@ namespace ScaleSwitcher.Views
 {
     public partial class OsdWindow : Window
     {
-        public OsdWindow(string message, double fontSize = 48, bool hideCursor = true)
+        public OsdWindow(string message, double fontSize = 36, bool hideCursor = true)
         {
             InitializeComponent();
             MessageText.Text = message;
@@ -16,9 +16,26 @@ namespace ScaleSwitcher.Views
 
         public void CloseWithFade()
         {
-            var anim = new DoubleAnimation(0, TimeSpan.FromSeconds(0.3));
-            anim.Completed += (s, e) => this.Close();
-            this.BeginAnimation(Window.OpacityProperty, anim);
+            try
+            {
+                ReleaseMouseCapture();
+            }
+            catch
+            {
+                // Ignore
+            }
+
+            // Respect OS animation settings (SPI_GETCLIENTAREAANIMATION)
+            if (!SystemParameters.ClientAreaAnimation)
+            {
+                Close();
+                return;
+            }
+
+            // motion-normal token: 200ms
+            var anim = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200));
+            anim.Completed += (s, e) => Close();
+            BeginAnimation(OpacityProperty, anim);
         }
     }
 }

@@ -178,28 +178,28 @@ namespace ScaleSwitcher.ViewModels
             UseCustomDisplayName = _settings.UseCustomDisplayName;
             CustomDisplayName = _settings.CustomDisplayName ?? string.Empty;
 
-            VersionText = ReadVersion();
+            VersionText = ReadVersion(_localization.Settings_VersionUnknown);
         }
 
-        private static string ReadVersion()
+        private static string ReadVersion(string fallback)
         {
             try
             {
                 // Look for version.txt next to the executing assembly
                 string? assemblyDir = Path.GetDirectoryName(
                     Assembly.GetExecutingAssembly().Location);
-                if (assemblyDir == null) return "Unknown";
+                if (assemblyDir == null) return fallback;
 
                 string versionFile = Path.Combine(assemblyDir, "version.txt");
-                if (!File.Exists(versionFile)) return "Unknown";
+                if (!File.Exists(versionFile)) return fallback;
 
                 string raw = File.ReadAllText(versionFile);
                 string trimmed = raw.Trim();
-                return string.IsNullOrEmpty(trimmed) ? "Unknown" : trimmed;
+                return string.IsNullOrEmpty(trimmed) ? fallback : trimmed;
             }
             catch
             {
-                return "Unknown";
+                return fallback;
             }
         }
 
@@ -217,11 +217,20 @@ namespace ScaleSwitcher.ViewModels
                     isSelected = true;
                 }
 
-                ScaleOptions.Add(new ScaleOptionViewModel
+                var opt = new ScaleOptionViewModel
                 {
                     Percentage = dpi.Percentage,
                     IsSelected = isSelected
-                });
+                };
+                opt.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(ScaleOptionViewModel.IsSelected) && opt.IsSelected && _noScaleError)
+                    {
+                        _noScaleError = false;
+                        OnPropertyChanged(nameof(NoScaleErrorVisible));
+                    }
+                };
+                ScaleOptions.Add(opt);
             }
         }
 

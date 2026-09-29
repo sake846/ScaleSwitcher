@@ -25,6 +25,15 @@ namespace ScaleSwitcher
 
             base.OnStartup(e);
 
+            ThemeManager.ApplyTheme(Resources);
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged += (s, ev) =>
+            {
+                if (ev.Category is Microsoft.Win32.UserPreferenceCategory.General or Microsoft.Win32.UserPreferenceCategory.VisualStyle)
+                {
+                    Dispatcher.BeginInvoke(() => ThemeManager.ApplyTheme(Resources));
+                }
+            };
+
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             _controller = new AppController();

@@ -148,13 +148,13 @@ namespace ScaleSwitcher.Services
         public string Settings_Scales => _language switch
         {
             UiLanguage.English => "Scales to Cycle",
-            _ => "切り替える倍率"
+            _ => "切り替えるスケーリング"
         };
 
         public string Settings_ScalesDescription => _language switch
         {
             UiLanguage.English => "Select at least one scale to cycle through when switching.",
-            _ => "切り替え時にローテーションする倍率を 1 つ以上選んでください。"
+            _ => "切り替え時にローテーションするスケーリングを 1 つ以上選んでください。"
         };
 
         public string Menu_KeyboardSwitch => _language switch
@@ -220,7 +220,43 @@ namespace ScaleSwitcher.Services
         public string Settings_NoScaleError => _language switch
         {
             UiLanguage.English => "Select at least one scale before saving.",
-            _ => "倍率を 1 件以上選んでから保存してください。"
+            _ => "スケーリングを 1 件以上選んでから保存してください。"
+        };
+
+        public string Settings_VersionUnknown => _language switch
+        {
+            UiLanguage.English => "Unknown",
+            _ => "不明"
+        };
+
+        public string DisplayInfo_Display => _language switch
+        {
+            UiLanguage.English => "Display",
+            _ => "ディスプレイ"
+        };
+
+        public string DisplayInfo_Resolution => _language switch
+        {
+            UiLanguage.English => "Resolution",
+            _ => "解像度"
+        };
+
+        public string DisplayInfo_Scale => _language switch
+        {
+            UiLanguage.English => "Scale",
+            _ => "スケーリング"
+        };
+
+        public string DisplayInfo_Yes => _language switch
+        {
+            UiLanguage.English => "Yes",
+            _ => "はい"
+        };
+
+        public string DisplayInfo_No => _language switch
+        {
+            UiLanguage.English => "No",
+            _ => "いいえ"
         };
 
         public string ExitConfirmMessage => _language switch

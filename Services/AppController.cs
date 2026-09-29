@@ -40,7 +40,10 @@ namespace ScaleSwitcher.Services
             _lightTrayIcon = LoadIcon("pack://application:,,,/Assets/app.light.ico");
             _darkTrayIcon = LoadIcon("pack://application:,,,/Assets/app.dark.ico");
 
-            var contextMenu = new Forms.ContextMenuStrip();
+            var contextMenu = new Forms.ContextMenuStrip
+            {
+                Renderer = new ModernMenuRenderer()
+            };
             contextMenu.Opening += (s, ev) => UpdateContextMenu();
 
             _notifyIcon = new Forms.NotifyIcon
@@ -223,7 +226,8 @@ namespace ScaleSwitcher.Services
             {
                 var dpiItem = new Forms.ToolStripMenuItem($"{dpi.Percentage}%")
                 {
-                    Checked = display.CurrentDpi?.Percentage == dpi.Percentage
+                    Checked = display.CurrentDpi?.Percentage == dpi.Percentage,
+                    AccessibleRole = Forms.AccessibleRole.RadioButton
                 };
                 dpiItem.Click += (s, ev) =>
                 {
@@ -252,7 +256,8 @@ namespace ScaleSwitcher.Services
             {
                 var resItem = new Forms.ToolStripMenuItem($"{res.Width} x {res.Height}")
                 {
-                    Checked = display.CurrentResolution != null && display.CurrentResolution.Equals(res)
+                    Checked = display.CurrentResolution != null && display.CurrentResolution.Equals(res),
+                    AccessibleRole = Forms.AccessibleRole.RadioButton
                 };
                 resItem.Click += (s, ev) => DisplayManager.SetResolution(display, res);
                 resSubMenu.DropDownItems.Add(resItem);
@@ -266,7 +271,8 @@ namespace ScaleSwitcher.Services
             var runAtStartupItem = new Forms.ToolStripMenuItem(_localization.Menu_RunAtStartup)
             {
                 CheckOnClick = true,
-                Checked = AutoStartService.IsEnabled()
+                Checked = AutoStartService.IsEnabled(),
+                AccessibleRole = Forms.AccessibleRole.CheckButton
             };
             runAtStartupItem.CheckedChanged += (s, e) =>
             {
@@ -279,7 +285,7 @@ namespace ScaleSwitcher.Services
 
             var keyboardSwitchItem = new Forms.ToolStripMenuItem(_localization.Menu_KeyboardSwitch)
             {
-                Checked = _settings.KeyboardSwitchMode != KeyboardSwitchMode.Off
+                AccessibleRole = Forms.AccessibleRole.MenuItem
             };
             AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardOff, KeyboardSwitchMode.Off);
             AddKeyboardSwitchMenuItem(keyboardSwitchItem, _localization.Menu_KeyboardShift, KeyboardSwitchMode.Shift);
@@ -290,12 +296,13 @@ namespace ScaleSwitcher.Services
             var showDisplayInfoItem = new Forms.ToolStripMenuItem(_localization.Menu_ShowDisplayInfo)
             {
                 CheckOnClick = true,
-                Checked = DisplayManager.DisplayInfoOsdsVisible
+                Checked = DisplayManager.DisplayInfoOsdsVisible,
+                AccessibleRole = Forms.AccessibleRole.CheckButton
             };
             showDisplayInfoItem.CheckedChanged += (s, e) =>
             {
                 if (showDisplayInfoItem.Checked)
-                    DisplayManager.ShowDisplayInfoOsds();
+                    DisplayManager.ShowDisplayInfoOsds(_localization);
                 else
                     DisplayManager.HideDisplayInfoOsds();
             };
@@ -304,13 +311,19 @@ namespace ScaleSwitcher.Services
             menu.Items.Add(new Forms.ToolStripSeparator());
 
             // --- Group 3: App operations ---
-            var settingsItem = new Forms.ToolStripMenuItem(_localization.Menu_Settings);
+            var settingsItem = new Forms.ToolStripMenuItem(_localization.Menu_Settings)
+            {
+                AccessibleRole = Forms.AccessibleRole.MenuItem
+            };
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
 
             menu.Items.Add(new Forms.ToolStripSeparator());
 
-            var exitItem = new Forms.ToolStripMenuItem(_localization.Menu_Exit);
+            var exitItem = new Forms.ToolStripMenuItem(_localization.Menu_Exit)
+            {
+                AccessibleRole = Forms.AccessibleRole.MenuItem
+            };
             exitItem.Click += (s, e) => ExitApp();
             menu.Items.Add(exitItem);
         }
@@ -322,7 +335,8 @@ namespace ScaleSwitcher.Services
         {
             var item = new Forms.ToolStripMenuItem(text)
             {
-                Checked = _settings.KeyboardSwitchMode == mode
+                Checked = _settings.KeyboardSwitchMode == mode,
+                AccessibleRole = Forms.AccessibleRole.RadioButton
             };
             item.Click += (s, e) =>
             {
@@ -395,6 +409,30 @@ namespace ScaleSwitcher.Services
             {
                 _keyboardChordListener.ChordPressed -= KeyboardChordListener_ChordPressed;
                 _keyboardChordListener.Dispose();
+            }
+        }
+    }
+
+    internal sealed class ModernMenuRenderer : Forms.ToolStripProfessionalRenderer
+    {
+        protected override void OnRenderItemCheck(Forms.ToolStripItemImageRenderEventArgs e)
+        {
+            if (e.Item.AccessibleRole == Forms.AccessibleRole.RadioButton)
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                var rect = e.ImageRectangle;
+                int size = 6;
+                int x = rect.X + (rect.Width - size) / 2;
+                int y = rect.Y + (rect.Height - size) / 2;
+
+                using var brush = new SolidBrush(e.Item.Selected ? System.Drawing.SystemColors.HighlightText : System.Drawing.SystemColors.MenuText);
+                g.FillEllipse(brush, x, y, size, size);
+            }
+            else
+            {
+                base.OnRenderItemCheck(e);
             }
         }
     }

@@ -4,21 +4,23 @@
         Title="OsdWindow"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" Focusable="False" Cursor="None">
-    <Grid>
+    <Grid Margin="24">
         <!--
             OSD overlay uses token brush (Brush.Overlay) and RadiusOverlay.
-            Font size is expressed as a binding in code-behind to allow DPI-awareness.
+            Margins and MaxWidth ensure long display names wrap and never overflow the screen.
         -->
-        <Border Background="{StaticResource Brush.Overlay}"
-                CornerRadius="{StaticResource RadiusOverlay}"
-                Padding="40"
+        <Border x:Name="OverlayCard"
+                Background="{DynamicResource Brush.Overlay}"
+                CornerRadius="{DynamicResource RadiusOverlay}"
+                Padding="32,20"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                MaxWidth="900">
+                MaxWidth="720"
+                MaxHeight="500">
             <TextBlock x:Name="MessageText"
-                       Foreground="White"
-                       FontSize="48"
-                       FontWeight="Bold"
+                       Foreground="#FFFFFF"
+                       FontSize="36"
+                       FontWeight="SemiBold"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        TextAlignment="Center"

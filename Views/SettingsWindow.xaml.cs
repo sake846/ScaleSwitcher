@@ -17,6 +17,24 @@ namespace ScaleSwitcher.Views
                 Close();
             };
             DataContext = vm;
+
+            SourceInitialized += (s, e) =>
+            {
+                try
+                {
+                    var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                    int isDark = ThemeManager.IsDarkTheme() ? 1 : 0;
+                    ScaleSwitcher.Models.NativeMethods.DwmSetWindowAttribute(
+                        hwnd,
+                        ScaleSwitcher.Models.NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE,
+                        ref isDark,
+                        sizeof(int));
+                }
+                catch
+                {
+                    // Ignore if DWM attribute is not supported
+                }
+            };
         }
     }
 }

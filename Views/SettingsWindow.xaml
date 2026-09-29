@@ -3,10 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ScaleSwitcher.ViewModels"
         Title="{Binding Title}"
-        MinWidth="320" MinHeight="480"
-        SizeToContent="WidthAndHeight"
+        Width="360" MinWidth="320" MinHeight="480"
+        SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource Brush.Surface}"
+        Foreground="{DynamicResource Brush.Text}"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
@@ -19,8 +21,8 @@
     <DockPanel>
         <!-- ===== Header ===== -->
         <Border DockPanel.Dock="Top"
-                Background="{StaticResource Brush.SurfaceAlt}"
-                BorderBrush="{StaticResource Brush.Border}"
+                Background="{DynamicResource Brush.SurfaceAlt}"
+                BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="0,0,0,1"
                 Padding="16,12">
             <StackPanel>
@@ -33,8 +35,8 @@
 
         <!-- ===== Footer ===== -->
         <Border DockPanel.Dock="Bottom"
-                Background="{StaticResource Brush.SurfaceAlt}"
-                BorderBrush="{StaticResource Brush.Border}"
+                Background="{DynamicResource Brush.SurfaceAlt}"
+                BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="0,1,0,0"
                 Padding="16,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -42,16 +44,21 @@
                         Command="{Binding CancelCommand}"
                         Style="{StaticResource ButtonStyle.Secondary}"
                         IsCancel="True"
+                        TabIndex="5"
+                        AutomationProperties.Name="{Binding CancelButtonText}"
                         Margin="0,0,8,0"/>
                 <Button Content="{Binding SaveButtonText}"
                         Command="{Binding SaveCommand}"
                         Style="{StaticResource ButtonStyle.Primary}"
-                        IsDefault="True"/>
+                        IsDefault="True"
+                        TabIndex="6"
+                        AutomationProperties.Name="{Binding SaveButtonText}"/>
             </StackPanel>
         </Border>
 
         <!-- ===== Scrollable content ===== -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      KeyboardNavigation.TabNavigation="Continue">
             <StackPanel Margin="16,14,16,14">
 
                 <!-- Section 1: Target Display -->
@@ -62,6 +69,7 @@
                           DisplayMemberPath="DisplayName"
                           Height="32"
                           VerticalContentAlignment="Center"
+                          TabIndex="1"
                           Margin="0,0,0,16"
                           AutomationProperties.Name="{Binding TargetDisplayHeader}"/>
 
@@ -71,11 +79,14 @@
                 <CheckBox Content="{Binding UseCustomDisplayNameText}"
                           IsChecked="{Binding UseCustomDisplayName, Mode=TwoWay}"
                           VerticalContentAlignment="Center"
-                          Margin="0,0,0,6"/>
+                          TabIndex="2"
+                          Margin="0,0,0,6"
+                          AutomationProperties.Name="{Binding UseCustomDisplayNameText}"/>
                 <TextBox Text="{Binding DisplayNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          IsEnabled="{Binding UseCustomDisplayName}"
                          Height="32"
                          VerticalContentAlignment="Center"
+                         TabIndex="3"
                          Margin="0,0,0,16"
                          AutomationProperties.Name="{Binding CustomDisplayNameHeader}"/>
 
@@ -85,7 +96,9 @@
                 <TextBlock Text="{Binding ScalesDescription}"
                            Style="{StaticResource TextStyle.Caption}"
                            Margin="0,0,0,6"/>
-                <ItemsControl ItemsSource="{Binding ScaleOptions}" Margin="0,0,0,4">
+                <ItemsControl ItemsSource="{Binding ScaleOptions}"
+                              KeyboardNavigation.TabNavigation="Continue"
+                              Margin="0,0,0,4">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <CheckBox Content="{Binding DisplayText}"
@@ -93,7 +106,9 @@
                                       VerticalContentAlignment="Center"
                                       Padding="4,0,0,0"
                                       Height="28"
-                                      Margin="0,2"/>
+                                      Margin="0,2"
+                                      TabIndex="4"
+                                      AutomationProperties.Name="{Binding DisplayText}"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -101,9 +116,11 @@
                 <TextBlock Text="{Binding NoScaleSelectedMessage}"
                            Style="{StaticResource TextStyle.Error}"
                            Visibility="{Binding NoScaleErrorVisible}"
+                           AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.Name="{Binding NoScaleSelectedMessage}"
                            Margin="0,4,0,0"/>
 
-                <Separator Margin="0,16"/>
+                <Separator Margin="0,16" Background="{DynamicResource Brush.Border}"/>
 
                 <!-- Section: About this app -->
                 <TextBlock Text="{Binding AboutSectionHeader}"
@@ -120,7 +137,7 @@
                     <TextBlock Grid.Column="2"
                                Text="{Binding VersionText}"
                                Style="{StaticResource TextStyle.Body}"
-                               Foreground="{StaticResource Brush.TextMuted}"/>
+                               Foreground="{DynamicResource Brush.TextMuted}"/>
                 </Grid>
 
             </StackPanel>
