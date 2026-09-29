@@ -115,6 +115,12 @@ namespace ScaleSwitcher.Services
             _ => "設定..."
         };
 
+        public string Menu_About => _language switch
+        {
+            UiLanguage.English => "About ScaleSwitcher...",
+            _ => "ScaleSwitcher について..."
+        };
+
         public string Menu_ShowDisplayInfo => _language switch
         {
             UiLanguage.English => "Show display info",
@@ -215,6 +221,24 @@ namespace ScaleSwitcher.Services
         {
             UiLanguage.English => "About",
             _ => "このアプリについて"
+        };
+
+        public string About_Title => _language switch
+        {
+            UiLanguage.English => "ScaleSwitcher — About",
+            _ => "ScaleSwitcher — このアプリについて"
+        };
+
+        public string About_Description => _language switch
+        {
+            UiLanguage.English => "Display scaling and resolution switcher",
+            _ => "ディスプレイのスケーリング・解像度切り替え"
+        };
+
+        public string About_VersionLabel => _language switch
+        {
+            UiLanguage.English => "Version",
+            _ => "バージョン"
         };
 
         public string Settings_NoScaleError => _language switch

@@ -268,21 +268,6 @@ namespace ScaleSwitcher.Services
         private void AddSystemMenuItems(Forms.ContextMenuStrip menu)
         {
             // --- Group 2: Behavior settings ---
-            var runAtStartupItem = new Forms.ToolStripMenuItem(_localization.Menu_RunAtStartup)
-            {
-                CheckOnClick = true,
-                Checked = AutoStartService.IsEnabled(),
-                AccessibleRole = Forms.AccessibleRole.CheckButton
-            };
-            runAtStartupItem.CheckedChanged += (s, e) =>
-            {
-                if (runAtStartupItem.Checked)
-                    AutoStartService.Enable();
-                else
-                    AutoStartService.Disable();
-            };
-            menu.Items.Add(runAtStartupItem);
-
             var keyboardSwitchItem = new Forms.ToolStripMenuItem(_localization.Menu_KeyboardSwitch)
             {
                 AccessibleRole = Forms.AccessibleRole.MenuItem
@@ -308,6 +293,21 @@ namespace ScaleSwitcher.Services
             };
             menu.Items.Add(showDisplayInfoItem);
 
+            var runAtStartupItem = new Forms.ToolStripMenuItem(_localization.Menu_RunAtStartup)
+            {
+                CheckOnClick = true,
+                Checked = AutoStartService.IsEnabled(),
+                AccessibleRole = Forms.AccessibleRole.CheckButton
+            };
+            runAtStartupItem.CheckedChanged += (s, e) =>
+            {
+                if (runAtStartupItem.Checked)
+                    AutoStartService.Enable();
+                else
+                    AutoStartService.Disable();
+            };
+            menu.Items.Add(runAtStartupItem);
+
             menu.Items.Add(new Forms.ToolStripSeparator());
 
             // --- Group 3: App operations ---
@@ -317,6 +317,13 @@ namespace ScaleSwitcher.Services
             };
             settingsItem.Click += (s, e) => OpenSettings();
             menu.Items.Add(settingsItem);
+
+            var aboutItem = new Forms.ToolStripMenuItem(_localization.Menu_About)
+            {
+                AccessibleRole = Forms.AccessibleRole.MenuItem
+            };
+            aboutItem.Click += (s, e) => new AboutWindow(_localization).ShowDialog();
+            menu.Items.Add(aboutItem);
 
             menu.Items.Add(new Forms.ToolStripSeparator());
 

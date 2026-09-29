@@ -31,7 +31,7 @@ It allows you to quickly change display scaling (DPI) and screen resolutions for
 
 1. Run the application to place it in the Windows system tray.
 2. **Left-click** the system tray icon, or press your configured **modifier keys simultaneously** (e.g., left Shift + right Shift) to cycle the scaling percentage on your designated monitor.
-3. **Right-click** the icon to access the context menu for changing individual display settings, accessing the settings UI, or managing startup execution.
+3. **Right-click** the icon to access display settings, the settings UI, startup options, and About ScaleSwitcher.
 4. Open the Settings window to configure the target monitor, select which scaling options to include in the cycle, and define the shortcut key configuration.
 
 ## Build & Run

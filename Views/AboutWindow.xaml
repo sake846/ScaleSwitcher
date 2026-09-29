@@ -1,0 +1,46 @@
+<Window x:Class="ScaleSwitcher.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="360" MinWidth="320" MinHeight="180"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource Brush.Surface}"
+        Foreground="{DynamicResource Brush.Text}">
+    <DockPanel Background="{DynamicResource Brush.Surface}">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.SurfaceAlt}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1"
+                Padding="16,12">
+            <StackPanel>
+                <TextBlock Text="ScaleSwitcher" Style="{StaticResource TextStyle.Title}"/>
+                <TextBlock Text="{Binding Description}"
+                           Style="{StaticResource TextStyle.Caption}"
+                           Margin="0,2,0,0"/>
+            </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource Brush.SurfaceAlt}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="16,10">
+            <Button Content="OK" Click="Close_Click"
+                    Style="{StaticResource ButtonStyle.Primary}"
+                    HorizontalAlignment="Right"
+                    IsDefault="True" IsCancel="True"
+                    AutomationProperties.Name="OK"/>
+        </Border>
+        <StackPanel Margin="16,16">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding VersionLabel}"
+                           Style="{StaticResource TextStyle.Body}"
+                           Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding VersionText}"
+                           Style="{StaticResource TextStyle.Body}"
+                           Foreground="{DynamicResource Brush.TextMuted}"/>
+            </StackPanel>
+        </StackPanel>
+    </DockPanel>
+</Window>

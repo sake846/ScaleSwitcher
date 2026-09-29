@@ -181,7 +181,7 @@ namespace ScaleSwitcher.ViewModels
             VersionText = ReadVersion(_localization.Settings_VersionUnknown);
         }
 
-        private static string ReadVersion(string fallback)
+        internal static string ReadVersion(string fallback)
         {
             try
             {
