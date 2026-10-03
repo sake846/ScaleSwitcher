@@ -178,29 +178,7 @@ namespace ScaleSwitcher.ViewModels
             UseCustomDisplayName = _settings.UseCustomDisplayName;
             CustomDisplayName = _settings.CustomDisplayName ?? string.Empty;
 
-            VersionText = ReadVersion(_localization.Settings_VersionUnknown);
-        }
-
-        internal static string ReadVersion(string fallback)
-        {
-            try
-            {
-                // Look for version.txt next to the executing assembly
-                string? assemblyDir = Path.GetDirectoryName(
-                    Assembly.GetExecutingAssembly().Location);
-                if (assemblyDir == null) return fallback;
-
-                string versionFile = Path.Combine(assemblyDir, "version.txt");
-                if (!File.Exists(versionFile)) return fallback;
-
-                string raw = File.ReadAllText(versionFile);
-                string trimmed = raw.Trim();
-                return string.IsNullOrEmpty(trimmed) ? fallback : trimmed;
-            }
-            catch
-            {
-                return fallback;
-            }
+            VersionText = AppVersionProvider.GetVersion(_localization.Settings_VersionUnknown);
         }
 
         private void PopulateScales(DisplayInfo? display)

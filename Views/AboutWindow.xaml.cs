@@ -15,7 +15,7 @@ namespace ScaleSwitcher.Views
         {
             Description = localization.About_Description;
             VersionLabel = $"{localization.About_VersionLabel}:";
-            VersionText = SettingsViewModel.ReadVersion(localization.Settings_VersionUnknown);
+            VersionText = AppVersionProvider.GetVersion(localization.Settings_VersionUnknown);
 
             InitializeComponent();
             Title = localization.About_Title;
